@@ -1,0 +1,100 @@
+/*
+=========================================================
+GOOGLE TRANSLATE
+=========================================================
+*/
+
+/*
+Hide Google's default translation dropdown.
+We will use our own EN / HI / MR buttons.
+*/
+
+.google-translate-container {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -9999;
+}
+
+
+/*
+=========================================================
+HIDE GOOGLE TRANSLATE BANNER
+=========================================================
+*/
+
+.goog-te-banner-frame {
+  display: none !important;
+}
+
+body {
+  top: 0 !important;
+}
+
+
+/*
+=========================================================
+HIDE GOOGLE TOOLTIP / HIGHLIGHT
+=========================================================
+*/
+
+.goog-tooltip {
+  display: none !important;
+}
+
+.goog-text-highlight {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+
+/*
+=========================================================
+HIDE GOOGLE TRANSLATE ELEMENT
+=========================================================
+*/
+
+#google_translate_element {
+  display: block;
+}
+
+.goog-te-gadget {
+  font-size: 0 !important;
+}
+
+.goog-te-gadget span {
+  display: none !important;
+}
+
+.goog-te-gadget select {
+  display: none !important;
+}
+
+
+/*
+=========================================================
+REMOVE GOOGLE TOP OFFSET
+=========================================================
+*/
+
+html {
+  margin-top: 0 !important;
+}
+
+body {
+  min-height: 100vh;
+}
+
+
+/*
+=========================================================
+GOOGLE TRANSLATED TEXT
+=========================================================
+*/
+
+font {
+  background-color: transparent !important;
+}
