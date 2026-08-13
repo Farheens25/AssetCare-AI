@@ -1,4 +1,6 @@
 import { Routes, Route } from "react-router-dom";
+import Onboarding from "../pages/Onboarding";
+import AddAsset from "../pages/AddAsset";
 
 import Landing from "../pages/Landing";
 import Login from "../pages/Login";
@@ -14,6 +16,8 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/add-asset" element={<AddAsset />} />
+      <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/dashboard" element={<Dashboard />} />
