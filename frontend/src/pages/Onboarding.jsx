@@ -28,8 +28,7 @@ const questions = [
   {
     id: "assetCount",
     title: "How many products do you want to track?",
-    description:
-      "This helps us understand how many assets you may manage.",
+    description: "This helps us understand how many assets you may manage.",
     type: "single",
     options: [
       "1–5 products",
@@ -163,10 +162,8 @@ function Onboarding() {
 
     try {
       // Get currently logged-in user
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      const { data, error: userError } = await supabase.auth.getUser();
+      const user = data?.user;
 
       if (userError) {
         throw userError;
@@ -192,7 +189,7 @@ function Onboarding() {
           },
           {
             onConflict: "user_id",
-          }
+          },
         );
 
       if (insertError) {
@@ -285,8 +282,8 @@ function Onboarding() {
             </h1>
 
             <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">
-              Answer a few quick questions so we can make your asset
-              management experience more useful.
+              Answer a few quick questions so we can make your asset management
+              experience more useful.
             </p>
           </motion.div>
 
@@ -387,9 +384,7 @@ function Onboarding() {
 
                         <span
                           className={`text-sm font-medium ${
-                            selected
-                              ? "text-blue-900"
-                              : "text-slate-700"
+                            selected ? "text-blue-900" : "text-slate-700"
                           }`}
                         >
                           {option}
@@ -415,12 +410,8 @@ function Onboarding() {
                     type="button"
                     onClick={handleContinue}
                     disabled={!canContinue || saving}
-                    whileHover={
-                      canContinue && !saving ? { y: -2 } : {}
-                    }
-                    whileTap={
-                      canContinue && !saving ? { scale: 0.98 } : {}
-                    }
+                    whileHover={canContinue && !saving ? { y: -2 } : {}}
+                    whileTap={canContinue && !saving ? { scale: 0.98 } : {}}
                     className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {saving

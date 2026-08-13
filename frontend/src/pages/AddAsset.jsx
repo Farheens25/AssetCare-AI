@@ -46,10 +46,8 @@ function AddAsset() {
 
     try {
       // Get currently logged-in user
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      const { data, error: userError } = await supabase.auth.getUser();
+      const user = data?.user;
 
       if (userError) {
         throw userError;
@@ -62,25 +60,23 @@ function AddAsset() {
       }
 
       // Save asset
-      const { error: insertError } = await supabase
-        .from("assets")
-        .insert([
-          {
-            user_id: user.id,
-            product_name: formData.product_name.trim(),
-            category: formData.category || null,
-            brand: formData.brand.trim() || null,
-            model: formData.model.trim() || null,
-            serial_number: formData.serial_number.trim() || null,
-            purchase_date: formData.purchase_date || null,
-            purchase_price: formData.purchase_price
-              ? Number(formData.purchase_price)
-              : null,
-            warranty_expiry: formData.warranty_expiry || null,
-            store_name: formData.store_name.trim() || null,
-            notes: formData.notes.trim() || null,
-          },
-        ]);
+      const { error: insertError } = await supabase.from("assets").insert([
+        {
+          user_id: user.id,
+          product_name: formData.product_name.trim(),
+          category: formData.category || null,
+          brand: formData.brand.trim() || null,
+          model: formData.model.trim() || null,
+          serial_number: formData.serial_number.trim() || null,
+          purchase_date: formData.purchase_date || null,
+          purchase_price: formData.purchase_price
+            ? Number(formData.purchase_price)
+            : null,
+          warranty_expiry: formData.warranty_expiry || null,
+          store_name: formData.store_name.trim() || null,
+          notes: formData.notes.trim() || null,
+        },
+      ]);
 
       if (insertError) {
         throw insertError;
@@ -136,8 +132,8 @@ function AddAsset() {
             </h1>
 
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Add your product information so AssetCare-AI can help you
-              manage it.
+              Add your product information so AssetCare-AI can help you manage
+              it.
             </p>
           </motion.div>
 
