@@ -411,14 +411,14 @@ function Dashboard() {
                 Smart Reminders
               </button>
 
-              <button
-                type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
-              >
-                📆
-                Calendar
-              </button>
+   <Link
+  to="/calendar"
+  onClick={() => setSidebarOpen(false)}
+  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+>
+  <FiCalendar size={17} />
+  Calendar
+</Link>
 
             </div>
           </div>

@@ -13,7 +13,7 @@ import {
   FiShield,
   FiBarChart2,
   FiShoppingBag,
-  FiLeaf,
+   FiSun,
   FiUsers,
   FiBriefcase,
   FiHelpCircle,
@@ -93,7 +93,7 @@ function DashboardSidebar({ open, onClose }) {
         {
           label: "Calendar",
           icon: FiCalendar,
-          path: "#",
+          path: "/calendar",
         },
       ],
     },
@@ -144,7 +144,7 @@ function DashboardSidebar({ open, onClose }) {
         },
         {
           label: "Energy & Eco",
-          icon: FiLeaf,
+          icon:  FiSun,
           path: "#",
         },
       ],
