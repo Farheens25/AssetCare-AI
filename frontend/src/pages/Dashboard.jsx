@@ -5,13 +5,14 @@ import {
   FiUser,
   FiLogOut,
   FiPlus,
-  FiPackage,
+  FiBox,
   FiShield,
   FiCalendar,
   FiArrowRight,
   FiMenu,
 } from "react-icons/fi";
 import { supabase } from "../lib/supabase";
+import DashboardSidebar from "../components/dashboard/DashboardSidebar";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -21,8 +22,6 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
-
-  // Mobile menu state
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -53,7 +52,8 @@ function Dashboard() {
         const { data, error: assetsError } = await supabase
           .from("assets")
           .select("*")
-          .eq("user_id", user.id);
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
 
         if (assetsError) {
           throw assetsError;
@@ -83,10 +83,7 @@ function Dashboard() {
     };
   }, [navigate, refreshKey]);
 
-  // -----------------------------
-  // LOGOUT
-  // -----------------------------
-
+  // Logout
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -96,18 +93,14 @@ function Dashboard() {
     }
   };
 
-  // -----------------------------
-  // WARRANTY DATA
-  // -----------------------------
-
+  // Assets having warranty
   const assetsWithWarranty = assets.filter(
     (asset) => asset.warranty_expiry
   );
 
+  // Warranty expiring within 30 days
   const expiringSoonAssets = assets.filter((asset) => {
-    if (!asset.warranty_expiry) {
-      return false;
-    }
+    if (!asset.warranty_expiry) return false;
 
     const today = new Date();
     const expiry = new Date(asset.warranty_expiry);
@@ -119,10 +112,7 @@ function Dashboard() {
     return difference >= 0 && difference <= 30;
   });
 
-  // -----------------------------
-  // WARRANTY STATUS
-  // -----------------------------
-
+  // Warranty status
   const getWarrantyStatus = (expiryDate) => {
     if (!expiryDate) {
       return {
@@ -158,14 +148,9 @@ function Dashboard() {
     };
   };
 
-  // -----------------------------
-  // FORMAT DATE
-  // -----------------------------
-
+  // Format date
   const formatDate = (date) => {
-    if (!date) {
-      return "Not added";
-    }
+    if (!date) return "Not added";
 
     return new Date(date).toLocaleDateString("en-IN", {
       day: "numeric",
@@ -174,10 +159,7 @@ function Dashboard() {
     });
   };
 
-  // -----------------------------
-  // LOADING
-  // -----------------------------
-
+  // Loading screen
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
@@ -192,15 +174,11 @@ function Dashboard() {
     );
   }
 
-  // -----------------------------
-  // ERROR
-  // -----------------------------
-
+  // Error screen
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 px-6">
         <div className="w-full max-w-md rounded-2xl border border-red-200 bg-white p-6 text-center shadow-sm">
-
           <h1 className="text-lg font-bold text-slate-900">
             Unable to load dashboard
           </h1>
@@ -220,323 +198,28 @@ function Dashboard() {
           >
             Try again
           </button>
-
         </div>
       </div>
     );
   }
 
-  // -----------------------------
-  // DASHBOARD
-  // -----------------------------
-
   return (
     <div className="min-h-screen bg-slate-50">
 
-      {/* =========================================
-          MOBILE SIDEBAR OVERLAY
-      ========================================= */}
+      {/* Sidebar */}
+      <DashboardSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* =========================================
-          SIDEBAR
-      ========================================= */}
-
-      <aside
-        className={`
-          fixed left-0 top-0 z-50
-          flex h-screen w-72 flex-col
-          border-r border-slate-200
-          bg-white
-          transition-transform duration-300
-          lg:translate-x-0
-          ${
-            sidebarOpen
-              ? "translate-x-0"
-              : "-translate-x-full"
-          }
-        `}
-      >
-
-        {/* Sidebar Header */}
-        <div className="flex h-20 items-center justify-between border-b border-slate-100 px-6">
-
-          <Link
-            to="/dashboard"
-            onClick={() => setSidebarOpen(false)}
-            className="text-xl font-bold tracking-tight text-slate-900"
-          >
-            AssetCare-AI
-          </Link>
-
-          <button
-            type="button"
-            onClick={() => setSidebarOpen(false)}
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
-          >
-            ✕
-          </button>
-
-        </div>
-
-        {/* Sidebar Navigation */}
-        <nav className="flex-1 overflow-y-auto px-4 py-5">
-
-          {/* Overview */}
-          <div className="mb-6">
-
-            <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Overview
-            </p>
-
-            <div className="space-y-1">
-
-              <Link
-                to="/dashboard"
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 rounded-xl bg-blue-50 px-3 py-2.5 text-sm font-medium text-blue-600"
-              >
-                <FiPackage size={17} />
-                Dashboard
-              </Link>
-
-              <Link
-                to="/products"
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-              >
-                <FiPackage size={17} />
-                My Assets
-              </Link>
-
-              <Link
-                to="/add-asset"
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-              >
-                <FiPlus size={17} />
-                Add Asset
-              </Link>
-
-            </div>
-          </div>
-
-          {/* Intelligence */}
-          <div className="mb-6">
-
-            <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Intelligence
-            </p>
-
-            <div className="space-y-1">
-
-              <button
-                type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
-              >
-                💬
-                AI Assistant
-              </button>
-
-              <button
-                type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
-              >
-                ❤️
-                Product Health
-              </button>
-
-              <button
-                type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
-              >
-                🛠️
-                Predictive Care
-              </button>
-
-              <button
-                type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
-              >
-                📊
-                Repair vs Replace
-              </button>
-
-            </div>
-          </div>
-
-          {/* Care */}
-          <div className="mb-6">
-
-            <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Care
-            </p>
-
-            <div className="space-y-1">
-
-              <button
-                type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
-              >
-                🔧
-                Service History
-              </button>
-
-              <button
-                type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
-              >
-                📅
-                Book Service
-              </button>
-
-              <button
-                type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
-              >
-                🔔
-                Smart Reminders
-              </button>
-
-              <button
-                type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
-              >
-                📆
-                Calendar
-              </button>
-
-            </div>
-          </div>
-
-          {/* Assets */}
-          <div className="mb-6">
-
-            <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Assets
-            </p>
-
-            <div className="space-y-1">
-
-              <button
-                type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
-              >
-                🏠
-                Home Assets
-              </button>
-
-              <button
-                type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
-              >
-                📄
-                Document Vault
-              </button>
-
-              <button
-                type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
-              >
-                🛡️
-                Insurance
-              </button>
-
-              <button
-                type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
-              >
-                🔍
-                Recalls
-              </button>
-
-            </div>
-          </div>
-
-          {/* Workspace */}
-          <div className="mb-6">
-
-            <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Workspace
-            </p>
-
-            <div className="space-y-1">
-
-              <button
-                type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
-              >
-                👥
-                Family Mode
-              </button>
-
-              <button
-                type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
-              >
-                💼
-                Business
-              </button>
-
-              <button
-                type="button"
-                disabled
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
-              >
-                ❓
-                Support
-              </button>
-
-              <Link
-                to="/settings"
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-              >
-                ⚙️
-                Settings
-              </Link>
-
-            </div>
-          </div>
-
-        </nav>
-      </aside>
-
-      {/* =========================================
-          MAIN AREA
-      ========================================= */}
-
+      {/* Main area */}
       <div className="lg:pl-72">
 
-        {/* =========================================
-            HEADER
-        ========================================= */}
-
+        {/* Header */}
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
-
           <div className="flex h-16 items-center justify-between px-4 sm:px-6">
 
-            {/* Mobile Menu */}
+            {/* Mobile menu */}
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
@@ -546,7 +229,7 @@ function Dashboard() {
               <FiMenu size={22} />
             </button>
 
-            {/* Desktop Logo */}
+            {/* Desktop title */}
             <Link
               to="/dashboard"
               className="hidden text-lg font-bold tracking-tight text-slate-900 lg:block"
@@ -554,7 +237,7 @@ function Dashboard() {
               AssetCare-AI
             </Link>
 
-            {/* Right Side */}
+            {/* Right side */}
             <div className="ml-auto flex items-center gap-2 sm:gap-4">
 
               <Link
@@ -584,10 +267,7 @@ function Dashboard() {
           </div>
         </header>
 
-        {/* =========================================
-            DASHBOARD CONTENT
-        ========================================= */}
-
+        {/* Dashboard content */}
         <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
 
           {/* Welcome */}
@@ -596,11 +276,9 @@ function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
-
             <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
 
               <div>
-
                 <p className="text-sm font-medium text-blue-600">
                   Your asset overview
                 </p>
@@ -614,10 +292,9 @@ function Dashboard() {
                 </h1>
 
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                  Keep track of your products, warranties and
-                  important information in one place.
+                  Keep track of your products, warranties and important
+                  information in one place.
                 </p>
-
               </div>
 
               <Link
@@ -631,19 +308,14 @@ function Dashboard() {
             </div>
           </motion.section>
 
-          {/* =========================================
-              STATISTICS
-          ========================================= */}
-
+          {/* Statistics */}
           <section className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 
             {/* Total Assets */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-
               <div className="flex items-start justify-between">
 
                 <div>
-
                   <p className="text-sm font-medium text-slate-500">
                     Total Assets
                   </p>
@@ -651,11 +323,10 @@ function Dashboard() {
                   <p className="mt-2 text-3xl font-bold text-slate-900">
                     {assets.length}
                   </p>
-
                 </div>
 
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                  <FiPackage size={20} />
+                  <FiBox size={20} />
                 </div>
 
               </div>
@@ -663,11 +334,9 @@ function Dashboard() {
 
             {/* Warranty */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-
               <div className="flex items-start justify-between">
 
                 <div>
-
                   <p className="text-sm font-medium text-slate-500">
                     With Warranty
                   </p>
@@ -675,7 +344,6 @@ function Dashboard() {
                   <p className="mt-2 text-3xl font-bold text-slate-900">
                     {assetsWithWarranty.length}
                   </p>
-
                 </div>
 
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-green-50 text-green-600">
@@ -687,11 +355,9 @@ function Dashboard() {
 
             {/* Expiring Soon */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-
               <div className="flex items-start justify-between">
 
                 <div>
-
                   <p className="text-sm font-medium text-slate-500">
                     Expiring Soon
                   </p>
@@ -699,7 +365,6 @@ function Dashboard() {
                   <p className="mt-2 text-3xl font-bold text-slate-900">
                     {expiringSoonAssets.length}
                   </p>
-
                 </div>
 
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-50 text-orange-500">
@@ -711,14 +376,10 @@ function Dashboard() {
 
           </section>
 
-          {/* =========================================
-              ASSETS
-          ========================================= */}
-
+          {/* Assets */}
           <section>
 
             <div className="mb-5">
-
               <h2 className="text-xl font-bold text-slate-900">
                 Your Assets
               </h2>
@@ -726,16 +387,15 @@ function Dashboard() {
               <p className="mt-1 text-sm text-slate-500">
                 Products currently being managed by AssetCare-AI.
               </p>
-
             </div>
 
-            {/* No Assets */}
             {assets.length === 0 ? (
 
+              /* Empty state */
               <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
 
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-                  <FiPackage size={25} />
+                  <FiBox size={25} />
                 </div>
 
                 <h3 className="mt-5 text-lg font-bold text-slate-900">
@@ -743,8 +403,8 @@ function Dashboard() {
                 </h3>
 
                 <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
-                  Add your first product to start tracking
-                  warranties and important details.
+                  Add your first product to start tracking warranties
+                  and important details.
                 </p>
 
                 <Link
@@ -759,70 +419,58 @@ function Dashboard() {
 
             ) : (
 
-              /* Asset Cards */
+              /* Asset cards */
               <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
 
                 {assets.map((asset) => {
 
-                  const warrantyStatus =
-                    getWarrantyStatus(
-                      asset.warranty_expiry
-                    );
+                  const warrantyStatus = getWarrantyStatus(
+                    asset.warranty_expiry
+                  );
 
                   return (
                     <motion.div
                       key={asset.id}
-                      initial={{
-                        opacity: 0,
-                        y: 15,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        y: 0,
-                      }}
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
                       className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-lg"
                     >
 
-                      {/* Asset Header */}
+                      {/* Product header */}
                       <div className="flex items-start gap-3">
 
                         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                          <FiPackage size={20} />
+                          <FiBox size={20} />
                         </div>
 
                         <div className="min-w-0 flex-1">
 
                           <h3 className="truncate text-base font-bold text-slate-900">
-                            {asset.product_name ||
-                              "Unnamed Asset"}
+                            {asset.product_name}
                           </h3>
 
                           <p className="mt-1 truncate text-xs text-slate-500">
-                            {asset.category ||
-                              "Category not added"}
+                            {asset.category || "Category not added"}
                           </p>
 
                         </div>
 
                       </div>
 
-                      {/* Warranty Status */}
+                      {/* Warranty status */}
                       <div className="mt-4">
-
                         <span
                           className={`rounded-full px-2.5 py-1 text-xs font-semibold ${warrantyStatus.className}`}
                         >
                           {warrantyStatus.label}
                         </span>
-
                       </div>
 
-                      {/* Asset Information */}
+                      {/* Product information */}
                       <div className="mt-5 space-y-3 border-t border-slate-100 pt-4">
 
                         {asset.brand && (
                           <div className="flex justify-between gap-4">
-
                             <span className="text-sm text-slate-500">
                               Brand
                             </span>
@@ -830,13 +478,11 @@ function Dashboard() {
                             <span className="truncate text-sm font-medium text-slate-800">
                               {asset.brand}
                             </span>
-
                           </div>
                         )}
 
                         {asset.model && (
                           <div className="flex justify-between gap-4">
-
                             <span className="text-sm text-slate-500">
                               Model
                             </span>
@@ -844,45 +490,73 @@ function Dashboard() {
                             <span className="truncate text-sm font-medium text-slate-800">
                               {asset.model}
                             </span>
+                          </div>
+                        )}
 
+                        {asset.serial_number && (
+                          <div className="flex justify-between gap-4">
+                            <span className="text-sm text-slate-500">
+                              Serial
+                            </span>
+
+                            <span className="truncate text-sm font-medium text-slate-800">
+                              {asset.serial_number}
+                            </span>
                           </div>
                         )}
 
                         {asset.purchase_date && (
                           <div className="flex justify-between gap-4">
-
                             <span className="text-sm text-slate-500">
                               Purchased
                             </span>
 
                             <span className="text-sm font-medium text-slate-800">
-                              {formatDate(
-                                asset.purchase_date
-                              )}
+                              {formatDate(asset.purchase_date)}
                             </span>
-
                           </div>
                         )}
 
+                        {asset.purchase_price !== null &&
+                          asset.purchase_price !== undefined && (
+                            <div className="flex justify-between gap-4">
+                              <span className="text-sm text-slate-500">
+                                Price
+                              </span>
+
+                              <span className="text-sm font-medium text-slate-800">
+                                ₹{Number(asset.purchase_price).toLocaleString("en-IN")}
+                              </span>
+                            </div>
+                          )}
+
                         {asset.warranty_expiry && (
                           <div className="flex justify-between gap-4">
-
                             <span className="text-sm text-slate-500">
                               Warranty
                             </span>
 
                             <span className="text-sm font-medium text-slate-800">
-                              {formatDate(
-                                asset.warranty_expiry
-                              )}
+                              {formatDate(asset.warranty_expiry)}
+                            </span>
+                          </div>
+                        )}
+
+                        {asset.store_name && (
+                          <div className="flex justify-between gap-4">
+                            <span className="text-sm text-slate-500">
+                              Store
                             </span>
 
+                            <span className="truncate text-sm font-medium text-slate-800">
+                              {asset.store_name}
+                            </span>
                           </div>
                         )}
 
                       </div>
 
-                      {/* View Details */}
+                      {/* View details */}
                       <button
                         type="button"
                         onClick={() =>
@@ -901,6 +575,7 @@ function Dashboard() {
                 })}
 
               </div>
+
             )}
 
           </section>

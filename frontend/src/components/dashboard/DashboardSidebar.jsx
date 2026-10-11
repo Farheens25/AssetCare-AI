@@ -13,7 +13,6 @@ import {
   FiShield,
   FiBarChart2,
   FiShoppingBag,
-  FiLeaf,
   FiUsers,
   FiBriefcase,
   FiHelpCircle,
@@ -144,7 +143,7 @@ function DashboardSidebar({ open, onClose }) {
         },
         {
           label: "Energy & Eco",
-          icon: FiLeaf,
+          icon: FiBarChart2,
           path: "#",
         },
       ],
@@ -211,6 +210,7 @@ function DashboardSidebar({ open, onClose }) {
             type="button"
             onClick={onClose}
             className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+            aria-label="Close menu"
           >
             <FiX size={20} />
           </button>
@@ -232,20 +232,22 @@ function DashboardSidebar({ open, onClose }) {
                     item.path !== "#" &&
                     location.pathname === item.path;
 
+                  {/* Disabled item */}
                   if (item.path === "#") {
                     return (
                       <button
                         key={item.label}
                         type="button"
                         disabled
-                        className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400"
+                        className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-400"
                       >
                         <Icon size={17} />
-                        {item.label}
+                        <span>{item.label}</span>
                       </button>
                     );
                   }
 
+                  {/* Active/available item */}
                   return (
                     <Link
                       key={item.label}
@@ -258,7 +260,7 @@ function DashboardSidebar({ open, onClose }) {
                       }`}
                     >
                       <Icon size={17} />
-                      {item.label}
+                      <span>{item.label}</span>
                     </Link>
                   );
                 })}
