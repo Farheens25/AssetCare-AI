@@ -1,3 +1,4 @@
+```jsx
 import { Link, useLocation } from "react-router-dom";
 import {
   FiGrid,
@@ -27,158 +28,60 @@ function DashboardSidebar({ open, onClose }) {
     {
       title: "Overview",
       items: [
-        {
-          label: "Dashboard",
-          icon: FiGrid,
-          path: "/dashboard",
-        },
-        {
-          label: "My Assets",
-          icon: FiPackage,
-          path: "/products",
-        },
-        {
-          label: "Add Asset",
-          icon: FiPlusCircle,
-          path: "/add-asset",
-        },
+        { label: "Dashboard", icon: FiGrid, path: "/dashboard" },
+        { label: "My Assets", icon: FiPackage, path: "/products" },
+        { label: "Add Asset", icon: FiPlusCircle, path: "/add-asset" },
       ],
     },
-
     {
       title: "Intelligence",
       items: [
-        {
-          label: "AI Assistant",
-          icon: FiMessageCircle,
-          path: "#",
-        },
-        {
-          label: "Product Health",
-          icon: FiHeart,
-          path: "#",
-        },
-        {
-          label: "Predictive Care",
-          icon: FiTool,
-          path: "#",
-        },
-        {
-          label: "Repair vs Replace",
-          icon: FiBarChart2,
-          path: "#",
-        },
+        { label: "AI Assistant", icon: FiMessageCircle, path: "#" },
+        { label: "Product Health", icon: FiHeart, path: "#" },
+        { label: "Predictive Care", icon: FiTool, path: "#" },
+        { label: "Repair vs Replace", icon: FiBarChart2, path: "#" },
       ],
     },
-
     {
       title: "Care",
       items: [
-        {
-          label: "Service History",
-          icon: FiTool,
-          path: "#",
-        },
-        {
-          label: "Book Service",
-          icon: FiCalendar,
-          path: "#",
-        },
-        {
-          label: "Smart Reminders",
-          icon: FiCalendar,
-          path: "#",
-        },
-        {
-          label: "Calendar",
-          icon: FiCalendar,
-          path: "#",
-        },
+        { label: "Service History", icon: FiTool, path: "#" },
+        { label: "Book Service", icon: FiCalendar, path: "#" },
+        { label: "Smart Reminders", icon: FiCalendar, path: "#" },
+        { label: "Calendar", icon: FiCalendar, path: "/calendar" },
       ],
     },
-
     {
       title: "Assets",
       items: [
-        {
-          label: "Home Assets",
-          icon: FiHome,
-          path: "#",
-        },
-        {
-          label: "Document Vault",
-          icon: FiFileText,
-          path: "#",
-        },
-        {
-          label: "Insurance",
-          icon: FiShield,
-          path: "#",
-        },
-        {
-          label: "Recalls",
-          icon: FiSearch,
-          path: "#",
-        },
+        { label: "Home Assets", icon: FiHome, path: "#" },
+        { label: "Document Vault", icon: FiFileText, path: "#" },
+        { label: "Insurance", icon: FiShield, path: "#" },
+        { label: "Recalls", icon: FiSearch, path: "#" },
       ],
     },
-
     {
       title: "Value",
       items: [
-        {
-          label: "Analytics",
-          icon: FiBarChart2,
-          path: "#",
-        },
-        {
-          label: "Resale Center",
-          icon: FiShoppingBag,
-          path: "#",
-        },
-        {
-          label: "Smart Shopping",
-          icon: FiShoppingBag,
-          path: "#",
-        },
-        {
-          label: "Energy & Eco",
-          icon: FiBarChart2,
-          path: "#",
-        },
+        { label: "Analytics", icon: FiBarChart2, path: "#" },
+        { label: "Resale Center", icon: FiShoppingBag, path: "#" },
+        { label: "Smart Shopping", icon: FiShoppingBag, path: "#" },
+        { label: "Energy & Eco", icon: FiBarChart2, path: "#" },
       ],
     },
-
     {
       title: "Workspace",
       items: [
-        {
-          label: "Family Mode",
-          icon: FiUsers,
-          path: "#",
-        },
-        {
-          label: "Business",
-          icon: FiBriefcase,
-          path: "#",
-        },
-        {
-          label: "Support",
-          icon: FiHelpCircle,
-          path: "#",
-        },
-        {
-          label: "Settings",
-          icon: FiSettings,
-          path: "/settings",
-        },
+        { label: "Family Mode", icon: FiUsers, path: "#" },
+        { label: "Business", icon: FiBriefcase, path: "#" },
+        { label: "Support", icon: FiHelpCircle, path: "#" },
+        { label: "Settings", icon: FiSettings, path: "/settings" },
       ],
     },
   ];
 
   return (
     <>
-      {/* Mobile overlay */}
       {open && (
         <div
           className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden"
@@ -186,7 +89,6 @@ function DashboardSidebar({ open, onClose }) {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`
           fixed left-0 top-0 z-50 flex h-screen w-72
@@ -196,7 +98,6 @@ function DashboardSidebar({ open, onClose }) {
           ${open ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        {/* Logo */}
         <div className="flex h-20 items-center justify-between border-b border-slate-100 px-6">
           <Link
             to="/dashboard"
@@ -216,7 +117,6 @@ function DashboardSidebar({ open, onClose }) {
           </button>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-4 py-5">
           {sections.map((section) => (
             <div key={section.title} className="mb-6">
@@ -227,12 +127,10 @@ function DashboardSidebar({ open, onClose }) {
               <div className="space-y-1">
                 {section.items.map((item) => {
                   const Icon = item.icon;
-
                   const active =
                     item.path !== "#" &&
                     location.pathname === item.path;
 
-                  {/* Disabled item */}
                   if (item.path === "#") {
                     return (
                       <button
@@ -247,7 +145,6 @@ function DashboardSidebar({ open, onClose }) {
                     );
                   }
 
-                  {/* Active/available item */}
                   return (
                     <Link
                       key={item.label}
@@ -274,3 +171,4 @@ function DashboardSidebar({ open, onClose }) {
 }
 
 export default DashboardSidebar;
+```

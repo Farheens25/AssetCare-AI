@@ -94,9 +94,7 @@ function Dashboard() {
   };
 
   // Assets having warranty
-  const assetsWithWarranty = assets.filter(
-    (asset) => asset.warranty_expiry
-  );
+  const assetsWithWarranty = assets.filter((asset) => asset.warranty_expiry);
 
   // Warranty expiring within 30 days
   const expiringSoonAssets = assets.filter((asset) => {
@@ -106,8 +104,7 @@ function Dashboard() {
     const expiry = new Date(asset.warranty_expiry);
 
     const difference =
-      (expiry.getTime() - today.getTime()) /
-      (1000 * 60 * 60 * 24);
+      (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
 
     return difference >= 0 && difference <= 30;
   });
@@ -125,8 +122,7 @@ function Dashboard() {
     const expiry = new Date(expiryDate);
 
     const difference =
-      (expiry.getTime() - today.getTime()) /
-      (1000 * 60 * 60 * 24);
+      (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
 
     if (difference < 0) {
       return {
@@ -166,9 +162,7 @@ function Dashboard() {
         <div className="text-center">
           <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600" />
 
-          <p className="text-sm text-slate-500">
-            Loading your dashboard...
-          </p>
+          <p className="text-sm text-slate-500">Loading your dashboard...</p>
         </div>
       </div>
     );
@@ -183,9 +177,7 @@ function Dashboard() {
             Unable to load dashboard
           </h1>
 
-          <p className="mt-2 text-sm text-red-600">
-            {error}
-          </p>
+          <p className="mt-2 text-sm text-red-600">{error}</p>
 
           <button
             type="button"
@@ -205,7 +197,6 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-
       {/* Sidebar */}
       <DashboardSidebar
         open={sidebarOpen}
@@ -213,12 +204,12 @@ function Dashboard() {
       />
 
       {/* Main area */}
-      <div className="lg:pl-72">
 
+      {/* Main area */}
+      <div className="lg:pl-72">
         {/* Header */}
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-
             {/* Mobile menu */}
             <button
               type="button"
@@ -239,16 +230,13 @@ function Dashboard() {
 
             {/* Right side */}
             <div className="ml-auto flex items-center gap-2 sm:gap-4">
-
               <Link
                 to="/profile"
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-blue-600"
               >
                 <FiUser size={16} />
 
-                <span className="hidden sm:inline">
-                  Profile
-                </span>
+                <span className="hidden sm:inline">Profile</span>
               </Link>
 
               <button
@@ -258,18 +246,14 @@ function Dashboard() {
               >
                 <FiLogOut size={16} />
 
-                <span className="hidden sm:inline">
-                  Logout
-                </span>
+                <span className="hidden sm:inline">Logout</span>
               </button>
-
             </div>
           </div>
         </header>
 
         {/* Dashboard content */}
         <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-
           {/* Welcome */}
           <motion.section
             initial={{ opacity: 0, y: 15 }}
@@ -277,7 +261,6 @@ function Dashboard() {
             className="mb-8"
           >
             <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-
               <div>
                 <p className="text-sm font-medium text-blue-600">
                   Your asset overview
@@ -304,17 +287,14 @@ function Dashboard() {
                 <FiPlus size={17} />
                 Add Asset
               </Link>
-
             </div>
           </motion.section>
 
           {/* Statistics */}
           <section className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
             {/* Total Assets */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-start justify-between">
-
                 <div>
                   <p className="text-sm font-medium text-slate-500">
                     Total Assets
@@ -328,14 +308,12 @@ function Dashboard() {
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                   <FiBox size={20} />
                 </div>
-
               </div>
             </div>
 
             {/* Warranty */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-start justify-between">
-
                 <div>
                   <p className="text-sm font-medium text-slate-500">
                     With Warranty
@@ -349,14 +327,12 @@ function Dashboard() {
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-green-50 text-green-600">
                   <FiShield size={20} />
                 </div>
-
               </div>
             </div>
 
             {/* Expiring Soon */}
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-start justify-between">
-
                 <div>
                   <p className="text-sm font-medium text-slate-500">
                     Expiring Soon
@@ -370,19 +346,14 @@ function Dashboard() {
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-50 text-orange-500">
                   <FiCalendar size={20} />
                 </div>
-
               </div>
             </div>
-
           </section>
 
           {/* Assets */}
           <section>
-
             <div className="mb-5">
-              <h2 className="text-xl font-bold text-slate-900">
-                Your Assets
-              </h2>
+              <h2 className="text-xl font-bold text-slate-900">Your Assets</h2>
 
               <p className="mt-1 text-sm text-slate-500">
                 Products currently being managed by AssetCare-AI.
@@ -390,10 +361,8 @@ function Dashboard() {
             </div>
 
             {assets.length === 0 ? (
-
               /* Empty state */
               <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
-
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
                   <FiBox size={25} />
                 </div>
@@ -403,8 +372,8 @@ function Dashboard() {
                 </h3>
 
                 <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
-                  Add your first product to start tracking warranties
-                  and important details.
+                  Add your first product to start tracking warranties and
+                  important details.
                 </p>
 
                 <Link
@@ -414,18 +383,13 @@ function Dashboard() {
                   <FiPlus size={17} />
                   Add your first asset
                 </Link>
-
               </div>
-
             ) : (
-
               /* Asset cards */
               <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-
                 {assets.map((asset) => {
-
                   const warrantyStatus = getWarrantyStatus(
-                    asset.warranty_expiry
+                    asset.warranty_expiry,
                   );
 
                   return (
@@ -435,16 +399,13 @@ function Dashboard() {
                       animate={{ opacity: 1, y: 0 }}
                       className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-lg"
                     >
-
                       {/* Product header */}
                       <div className="flex items-start gap-3">
-
                         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                           <FiBox size={20} />
                         </div>
 
                         <div className="min-w-0 flex-1">
-
                           <h3 className="truncate text-base font-bold text-slate-900">
                             {asset.product_name}
                           </h3>
@@ -452,9 +413,7 @@ function Dashboard() {
                           <p className="mt-1 truncate text-xs text-slate-500">
                             {asset.category || "Category not added"}
                           </p>
-
                         </div>
-
                       </div>
 
                       {/* Warranty status */}
@@ -468,7 +427,6 @@ function Dashboard() {
 
                       {/* Product information */}
                       <div className="mt-5 space-y-3 border-t border-slate-100 pt-4">
-
                         {asset.brand && (
                           <div className="flex justify-between gap-4">
                             <span className="text-sm text-slate-500">
@@ -525,7 +483,10 @@ function Dashboard() {
                               </span>
 
                               <span className="text-sm font-medium text-slate-800">
-                                ₹{Number(asset.purchase_price).toLocaleString("en-IN")}
+                                ₹
+                                {Number(asset.purchase_price).toLocaleString(
+                                  "en-IN",
+                                )}
                               </span>
                             </div>
                           )}
@@ -553,33 +514,25 @@ function Dashboard() {
                             </span>
                           </div>
                         )}
-
                       </div>
 
                       {/* View details */}
                       <button
                         type="button"
                         onClick={() =>
-                          alert(
-                            "Asset Details page will be created next."
-                          )
+                          alert("Asset Details page will be created next.")
                         }
                         className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
                       >
                         View Details
                         <FiArrowRight size={16} />
                       </button>
-
                     </motion.div>
                   );
                 })}
-
               </div>
-
             )}
-
           </section>
-
         </main>
       </div>
     </div>

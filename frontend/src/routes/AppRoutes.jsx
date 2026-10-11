@@ -10,7 +10,9 @@ import Products from "../pages/Products";
 import Notifications from "../pages/Notifications";
 import Profile from "../pages/Profile";
 import Settings from "../pages/Settings";
+import MaintenanceCalendar from "../pages/MaintenanceCalendar";
 import NotFound from "../pages/NotFound";
+
 
 function AppRoutes() {
   return (
@@ -26,6 +28,7 @@ function AppRoutes() {
       <Route path="/profile" element={<Profile />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="*" element={<NotFound />} />
+      <Route path="/calendar" element={<MaintenanceCalendar />}/>
     </Routes>
   );
 }
