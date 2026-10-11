@@ -36,6 +36,115 @@ function AddAsset() {
   const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
   const [activeMethod, setActiveMethod] = useState("manual");
+  const [productPhoto, setProductPhoto] = useState(null);
+  const [invoiceDocument, setInvoiceDocument] = useState(null);
+  const [extracting, setExtracting] = useState(false);
+const [extractionMessage, setExtractionMessage] = useState("");
+
+const handleWarrantyExtraction = async (file) => {
+  if (!file) {
+    setExtractionMessage("Please select a warranty-card image.");
+    return;
+  }
+
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    setExtractionMessage("Please choose a JPG, PNG, or WebP image.");
+    return;
+  }
+
+  setExtracting(true);
+  setExtractionMessage("");
+
+  try {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError) throw sessionError;
+
+    if (!session) {
+      throw new Error("Please log in again.");
+    }
+
+    const imageBase64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        const result = reader.result;
+
+        if (typeof result !== "string") {
+          reject(new Error("Could not read the image."));
+          return;
+        }
+
+        resolve(result.split(",")[1]);
+      };
+
+      reader.onerror = () => reject(new Error("Could not read the image."));
+      reader.readAsDataURL(file);
+    });
+
+    const { data, error } = await supabase.functions.invoke(
+      "rapid-processor",
+      {
+        body: {
+          imageBase64,
+          mimeType: file.type,
+        },
+      },
+    );
+
+    if (error) throw error;
+    if (!data?.success || !data?.extracted) {
+      throw new Error(data?.error || "Could not extract warranty details.");
+    }
+
+    const extracted = data.extracted;
+
+    setFormData((previous) => {
+      const updated = { ...previous };
+
+      const fields = [
+        "product_name",
+        "brand",
+        "category",
+        "model",
+        "serial_number",
+        "invoice_number",
+        "purchase_date",
+        "warranty_months",
+        "warranty_expiry",
+        "store_name",
+        "purchase_price",
+        "notes",
+      ];
+
+      fields.forEach((field) => {
+        const value = extracted[field];
+
+        if (value !== null && value !== undefined && value !== "") {
+          updated[field] = String(value);
+        }
+      });
+
+      return updated;
+    });
+
+    
+    setExtractionMessage(
+      "Details extracted! Please review them before saving.",
+    );
+  } catch (error) {
+    console.error("Warranty extraction error:", error);
+    setExtractionMessage(
+      error.message || "Could not analyze the warranty card.",
+    );
+  } finally {
+    setExtracting(false);
+  }
+};
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -118,33 +227,94 @@ function AddAsset() {
         return;
       }
 
-      const { error: insertError } = await supabase.from("assets").insert([
-        {
-          user_id: user.id,
-          product_name: formData.product_name.trim(),
-          brand: formData.brand.trim() || null,
-          category: formData.category || null,
-          model: formData.model.trim() || null,
-          serial_number: formData.serial_number.trim() || null,
-          invoice_number: formData.invoice_number.trim() || null,
-          purchase_date: formData.purchase_date || null,
-          warranty_months: formData.warranty_months
-            ? Number(formData.warranty_months)
-            : null,
-          warranty_expiry: formData.warranty_expiry || null,
-          store_name: formData.store_name.trim() || null,
-          purchase_price: formData.purchase_price
-            ? Number(formData.purchase_price)
-            : null,
-          location_in_home: formData.location_in_home.trim() || null,
-          notes: formData.notes.trim() || null,
-        },
-      ]);
+      const { data: asset, error: insertError } = await supabase
+        .from("assets")
+        .insert([
+          {
+            user_id: user.id,
+            product_name: formData.product_name.trim(),
+            brand: formData.brand.trim() || null,
+            category: formData.category || null,
+            model: formData.model.trim() || null,
+            serial_number: formData.serial_number.trim() || null,
+            invoice_number: formData.invoice_number.trim() || null,
+            purchase_date: formData.purchase_date || null,
+            warranty_months: formData.warranty_months
+              ? Number(formData.warranty_months)
+              : null,
+            warranty_expiry: formData.warranty_expiry || null,
+            store_name: formData.store_name.trim() || null,
+            purchase_price: formData.purchase_price
+              ? Number(formData.purchase_price)
+              : null,
+            location_in_home: formData.location_in_home.trim() || null,
+            notes: formData.notes.trim() || null,
+          },
+        ])
+        .select("id")
+        .single();
 
       if (insertError) {
         throw insertError;
       }
 
+      if (insertError) {
+        throw insertError;
+      }
+      // Upload product photo
+      let productPhotoPath = null;
+      let invoiceFilePath = null;
+
+      if (productPhoto) {
+        const photoExt = productPhoto.name.split(".").pop();
+        productPhotoPath = `${user.id}/${asset.id}.${photoExt}`;
+
+        const { error: photoUploadError } = await supabase.storage
+          .from("asset-photos")
+          .upload(productPhotoPath, productPhoto, {
+            contentType: productPhoto.type,
+          });
+
+        if (photoUploadError) {
+          throw photoUploadError;
+        }
+      }
+
+      // Upload invoice or warranty document
+      if (invoiceDocument) {
+        const documentExt = invoiceDocument.name.split(".").pop();
+        invoiceFilePath = `${user.id}/${asset.id}-invoice.${documentExt}`;
+
+        const { error: documentUploadError } = await supabase.storage
+          .from("asset-documents")
+          .upload(invoiceFilePath, invoiceDocument, {
+            contentType: invoiceDocument.type,
+          });
+
+        if (documentUploadError) {
+          throw documentUploadError;
+        }
+      }
+
+      // Save uploaded file paths in the assets table
+      if (productPhotoPath || invoiceFilePath) {
+        const { error: pathUpdateError } = await supabase
+          .from("assets")
+          .update({
+            ...(productPhotoPath && {
+              product_photo_path: productPhotoPath,
+            }),
+            ...(invoiceFilePath && {
+              invoice_file_path: invoiceFilePath,
+            }),
+          })
+          .eq("id", asset.id)
+          .eq("user_id", user.id);
+
+        if (pathUpdateError) {
+          throw pathUpdateError;
+        }
+      }
       setSuccess("Product added successfully!");
 
       setTimeout(() => {
@@ -321,14 +491,13 @@ function AddAsset() {
         </motion.section>
 
         {/* Notice */}
-        {activeMethod !== "manual" && (
+        {activeMethod !== "manual" && activeMethod !== "photo" && (
           <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 text-sm text-blue-700">
             <span className="font-semibold">
               {activeMethod === "upload" && "Upload Bill"}
               {activeMethod === "scan" && "Scan Bill"}
               {activeMethod === "qr" && "Scan QR Code"}
               {activeMethod === "barcode" && "Scan Barcode"}
-              {activeMethod === "photo" && "Product Photo"}
             </span>{" "}
             will be implemented in the next step. For now, you can enter the
             product details manually below.
@@ -475,6 +644,63 @@ function AddAsset() {
                   className={inputClass}
                 />
               </div>
+
+             
+{/* Product Photo Upload */}
+{activeMethod === "photo" && (
+  <div>
+    <label className="mb-2 block text-sm font-medium text-slate-700">
+      Product Photo
+    </label>
+    <input
+      type="file"
+      accept="image/*"
+      onChange={(e) => setProductPhoto(e.target.files[0] || null)}
+      className={inputClass}
+    />
+  </div>
+)}
+
+{/* Invoice / Warranty Document — Manual Entry only */}
+{/* Invoice / Warranty Document — Product Photo mode only */}
+{activeMethod === "photo" && (
+  <div>
+    <label className="mb-2 block text-sm font-medium text-slate-700">
+      Invoice / Warranty Document
+    </label>
+    <input
+      type="file"
+      accept="image/*,.pdf"
+      onChange={(e) => setInvoiceDocument(e.target.files[0] || null)}
+      className={inputClass}
+    />
+
+    <button
+      type="button"
+      onClick={() => handleWarrantyExtraction(invoiceDocument)}
+      disabled={
+        extracting ||
+        !invoiceDocument ||
+        !["image/jpeg", "image/png", "image/webp"].includes(
+          invoiceDocument?.type
+        )
+      }
+      className="mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+    >
+      {extracting ? "Analyzing warranty card..." : "Extract Details with AI"}
+    </button>
+
+    {extractionMessage && (
+      <p className="mt-2 text-sm text-slate-600">
+        {extractionMessage}
+      </p>
+    )}
+  </div>
+)}
+
+              
+
+
 
               {/* Invoice */}
               <div>
