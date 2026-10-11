@@ -1,4 +1,3 @@
-```jsx
 import { Link, useLocation } from "react-router-dom";
 import {
   FiGrid,
@@ -128,8 +127,7 @@ function DashboardSidebar({ open, onClose }) {
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const active =
-                    item.path !== "#" &&
-                    location.pathname === item.path;
+                    item.path !== "#" && location.pathname === item.path;
 
                   if (item.path === "#") {
                     return (
@@ -171,4 +169,3 @@ function DashboardSidebar({ open, onClose }) {
 }
 
 export default DashboardSidebar;
-```
