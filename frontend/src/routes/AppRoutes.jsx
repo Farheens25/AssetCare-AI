@@ -10,6 +10,7 @@ import Products from "../pages/Products";
 import Notifications from "../pages/Notifications";
 import Profile from "../pages/Profile";
 import Settings from "../pages/Settings";
+import ProductHealth from "../pages/ProductHealth";
 import MaintenanceCalendar from "../pages/MaintenanceCalendar";
 import NotFound from "../pages/NotFound";
 
@@ -24,6 +25,7 @@ function AppRoutes() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/products" element={<Products />} />
+      <Route path="/health" element={<ProductHealth />} />
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/settings" element={<Settings />} />

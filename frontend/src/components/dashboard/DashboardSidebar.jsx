@@ -36,7 +36,7 @@ function DashboardSidebar({ open, onClose }) {
       title: "Intelligence",
       items: [
         { label: "AI Assistant", icon: FiMessageCircle, path: "#" },
-        { label: "Product Health", icon: FiHeart, path: "#" },
+        { label: "Product Health", icon: FiHeart, path: "/health" },
         { label: "Predictive Care", icon: FiTool, path: "#" },
         { label: "Repair vs Replace", icon: FiBarChart2, path: "#" },
       ],
