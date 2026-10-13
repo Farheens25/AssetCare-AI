@@ -16,7 +16,7 @@ import Settings from "../pages/Settings";
 import ProductHealth from "../pages/ProductHealth";
 import MaintenanceCalendar from "../pages/MaintenanceCalendar";
 import NotFound from "../pages/NotFound";
-
+import FamilyMode from "../pages/FamilyMode";
 
 function AppRoutes() {
   return (
@@ -53,6 +53,7 @@ function AppRoutes() {
       {/* 404 Page */}
       <Route path="*" element={<NotFound />} />
       <Route path="/calendar" element={<MaintenanceCalendar />}/>
+      <Route path="/family" element={<FamilyMode />}/>
     </Routes>
   );
 }
