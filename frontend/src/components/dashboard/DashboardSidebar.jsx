@@ -71,7 +71,7 @@ function DashboardSidebar({ open, onClose }) {
     {
       title: "Workspace",
       items: [
-        { label: "Family Mode", icon: FiUsers, path: "#" },
+        { label: "Family Mode", icon: FiUsers, path: "/family" },
         { label: "Business", icon: FiBriefcase, path: "#" },
         { label: "Support", icon: FiHelpCircle, path: "#" },
         { label: "Settings", icon: FiSettings, path: "/settings" },

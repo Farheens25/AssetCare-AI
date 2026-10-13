@@ -12,7 +12,7 @@ import Profile from "../pages/Profile";
 import Settings from "../pages/Settings";
 import MaintenanceCalendar from "../pages/MaintenanceCalendar";
 import NotFound from "../pages/NotFound";
-
+import FamilyMode from "../pages/FamilyMode";
 
 function AppRoutes() {
   return (
@@ -29,6 +29,7 @@ function AppRoutes() {
       <Route path="/settings" element={<Settings />} />
       <Route path="*" element={<NotFound />} />
       <Route path="/calendar" element={<MaintenanceCalendar />}/>
+      <Route path="/family" element={<FamilyMode />}/>
     </Routes>
   );
 }
