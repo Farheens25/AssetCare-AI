@@ -1,3 +1,4 @@
+
 import { Link, useLocation } from "react-router-dom";
 import {
   FiGrid,
@@ -13,7 +14,7 @@ import {
   FiShield,
   FiBarChart2,
   FiShoppingBag,
-  FiLeaf,
+  FiFeather,
   FiUsers,
   FiBriefcase,
   FiHelpCircle,
@@ -28,151 +29,70 @@ function DashboardSidebar({ open, onClose }) {
     {
       title: "Overview",
       items: [
-        {
-          label: "Dashboard",
-          icon: FiGrid,
-          path: "/dashboard",
-        },
-        {
-          label: "My Assets",
-          icon: FiPackage,
-          path: "/products",
-        },
-        {
-          label: "Add Asset",
-          icon: FiPlusCircle,
-          path: "/add-asset",
-        },
+        { label: "Dashboard", icon: FiGrid, path: "/dashboard" },
+        { label: "My Assets", icon: FiPackage, path: "/products" },
+        { label: "Add Asset", icon: FiPlusCircle, path: "/add-asset" },
       ],
     },
-
     {
       title: "Intelligence",
       items: [
-        {
-          label: "AI Assistant",
-          icon: FiMessageCircle,
-          path: "#",
-        },
-        {
-          label: "Product Health",
-          icon: FiHeart,
-          path: "#",
-        },
-        {
-          label: "Predictive Care",
-          icon: FiTool,
-          path: "#",
-        },
-        {
-          label: "Repair vs Replace",
-          icon: FiBarChart2,
-          path: "#",
-        },
+        { label: "AI Assistant", icon: FiMessageCircle, path: "#" },
+        { label: "Product Health", icon: FiHeart, path: "#" },
+        { label: "Predictive Care", icon: FiTool, path: "#" },
+        { label: "Repair vs Replace", icon: FiBarChart2, path: "#" },
       ],
     },
-
     {
       title: "Care",
       items: [
         {
           label: "Service History",
           icon: FiTool,
-          path: "#",
+          path: "/service-history",
         },
         {
           label: "Book Service",
           icon: FiCalendar,
-          path: "#",
+          path: "/book-service",
         },
-        {
-          label: "Smart Reminders",
-          icon: FiCalendar,
-          path: "#",
-        },
-        {
-          label: "Calendar",
-          icon: FiCalendar,
-          path: "#",
-        },
+        { label: "Smart Reminders", icon: FiCalendar, path: "#" },
+        { label: "Calendar", icon: FiCalendar, path: "#" },
       ],
     },
-
     {
       title: "Assets",
       items: [
-        {
-          label: "Home Assets",
-          icon: FiHome,
-          path: "#",
-        },
-        {
-          label: "Document Vault",
-          icon: FiFileText,
-          path: "#",
-        },
-        {
-          label: "Insurance",
-          icon: FiShield,
-          path: "#",
-        },
-        {
-          label: "Recalls",
-          icon: FiSearch,
-          path: "#",
-        },
+        { label: "Home Assets", icon: FiHome, path: "#" },
+        { label: "Document Vault", icon: FiFileText, path: "#" },
+        { label: "Insurance", icon: FiShield, path: "#" },
+        { label: "Recalls", icon: FiSearch, path: "#" },
       ],
     },
-
     {
       title: "Value",
       items: [
-        {
-          label: "Analytics",
-          icon: FiBarChart2,
-          path: "#",
-        },
-        {
-          label: "Resale Center",
-          icon: FiShoppingBag,
-          path: "#",
-        },
+        { label: "Analytics", icon: FiBarChart2, path: "#" },
+        { label: "Resale Center", icon: FiShoppingBag, path: "#" },
         {
           label: "Smart Shopping",
           icon: FiShoppingBag,
-          path: "#",
+          path: "/shopping",
         },
         {
           label: "Energy & Eco",
-          icon: FiLeaf,
-          path: "#",
+          icon: FiFeather,
+          path: "/energy-eco",
         },
       ],
     },
-
     {
       title: "Workspace",
       items: [
-        {
-          label: "Family Mode",
-          icon: FiUsers,
-          path: "#",
-        },
-        {
-          label: "Business",
-          icon: FiBriefcase,
-          path: "#",
-        },
-        {
-          label: "Support",
-          icon: FiHelpCircle,
-          path: "#",
-        },
-        {
-          label: "Settings",
-          icon: FiSettings,
-          path: "/settings",
-        },
+        { label: "Family Mode", icon: FiUsers, path: "#" },
+        { label: "Business", icon: FiBriefcase, path: "#" },
+        { label: "Support", icon: FiHelpCircle, path: "#" },
+        { label: "Settings", icon: FiSettings, path: "/settings" },
       ],
     },
   ];
@@ -211,6 +131,7 @@ function DashboardSidebar({ open, onClose }) {
             type="button"
             onClick={onClose}
             className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+            aria-label="Close sidebar"
           >
             <FiX size={20} />
           </button>

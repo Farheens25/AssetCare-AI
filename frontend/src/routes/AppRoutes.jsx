@@ -10,6 +10,8 @@ import AddAsset from "../pages/AddAsset";
 import Onboarding from "../pages/Onboarding";
 import ServiceHistory from "../pages/ServiceHistory";
 import BookService from "../pages/BookService";
+import SmartShopping from "../pages/SmartShopping";
+import EnergyEco from "../pages/EnergyEco";
 import Notifications from "../pages/Notifications";
 import Profile from "../pages/Profile";
 import Settings from "../pages/Settings";
@@ -37,6 +39,18 @@ function AppRoutes() {
       <Route
         path="/book-service"
         element={<BookService />}
+      />
+
+      {/* Smart Shopping */}
+      <Route
+        path="/shopping"
+        element={<SmartShopping />}
+      />
+
+      {/* Energy & Eco */}
+      <Route
+        path="/energy-eco"
+        element={<EnergyEco />}
       />
 
       {/* Other Pages */}
