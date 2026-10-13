@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
+import { useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -12,6 +13,17 @@ import {
   FiEdit3,
 } from "react-icons/fi";
 import { supabase } from "../lib/supabase";
+
+const BARCODE_FORMATS = [
+  Html5QrcodeSupportedFormats.EAN_13,
+  Html5QrcodeSupportedFormats.EAN_8,
+  Html5QrcodeSupportedFormats.UPC_A,
+  Html5QrcodeSupportedFormats.UPC_E,
+  Html5QrcodeSupportedFormats.CODE_39,
+  Html5QrcodeSupportedFormats.CODE_93,
+  Html5QrcodeSupportedFormats.CODE_128,
+  Html5QrcodeSupportedFormats.ITF,
+];
 
 function AddAsset() {
   const navigate = useNavigate();
@@ -33,118 +45,421 @@ function AddAsset() {
   });
 
   const [error, setError] = useState("");
+  const qrScannerRef = useRef(null);
   const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
   const [activeMethod, setActiveMethod] = useState("manual");
   const [productPhoto, setProductPhoto] = useState(null);
   const [invoiceDocument, setInvoiceDocument] = useState(null);
   const [extracting, setExtracting] = useState(false);
-const [extractionMessage, setExtractionMessage] = useState("");
+  const [extractionMessage, setExtractionMessage] = useState("");
+  const [qrResult, setQrResult] = useState("");
+  const [qrError, setQrError] = useState("");
+  const [scanningQR, setScanningQR] = useState(false);
+  const [barcodeResult, setBarcodeResult] = useState(null);
+  const [barcodeError, setBarcodeError] = useState("");
+  const [scanningBarcode, setScanningBarcode] = useState(false);
+  const [readingBarcodeImage, setReadingBarcodeImage] = useState(false);
+  const [lookingUpBarcode, setLookingUpBarcode] = useState(false);
+  const [scannedBill, setScannedBill] = useState(null);
 
-const handleWarrantyExtraction = async (file) => {
-  if (!file) {
-    setExtractionMessage("Please select a warranty-card image.");
-    return;
-  }
-
-  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-    setExtractionMessage("Please choose a JPG, PNG, or WebP image.");
-    return;
-  }
-
-  setExtracting(true);
-  setExtractionMessage("");
-
-  try {
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
-
-    if (sessionError) throw sessionError;
-
-    if (!session) {
-      throw new Error("Please log in again.");
+  const handleWarrantyExtraction = async (file) => {
+    if (!file) {
+      setExtractionMessage("Please select a warranty-card image.");
+      return;
     }
 
-    const imageBase64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setExtractionMessage("Please choose a JPG, PNG, or WebP image.");
+      return;
+    }
 
-      reader.onload = () => {
-        const result = reader.result;
+    setExtracting(true);
+    setExtractionMessage("");
 
-        if (typeof result !== "string") {
-          reject(new Error("Could not read the image."));
+    try {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError) throw sessionError;
+
+      if (!session) {
+        throw new Error("Please log in again.");
+      }
+
+      const imageBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = () => {
+          const result = reader.result;
+
+          if (typeof result !== "string") {
+            reject(new Error("Could not read the image."));
+            return;
+          }
+
+          resolve(result.split(",")[1]);
+        };
+
+        reader.onerror = () => reject(new Error("Could not read the image."));
+        reader.readAsDataURL(file);
+      });
+
+      let data;
+      let extractionError;
+
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const result = await supabase.functions.invoke("rapid-processor", {
+          body: {
+            imageBase64,
+            mimeType: file.type,
+            mode: activeMethod === "photo" ? "photo" : "bill",
+          },
+        });
+
+        data = result.data;
+        extractionError = result.error;
+
+        if (!extractionError) break;
+
+        let detailedMessage = extractionError.message;
+
+        if (extractionError.context) {
+          try {
+            const response = await extractionError.context.clone().json();
+
+            console.error("Edge Function response:", response);
+
+            detailedMessage =
+              response.details || response.error || extractionError.message;
+          } catch (detailsError) {
+            console.error("Could not read error response:", detailsError);
+          }
+        }
+
+        const isTemporaryCapacityError =
+          /high demand|overload|rate.?limit|\b429\b|\b503\b/i.test(
+            detailedMessage,
+          );
+
+        if (!isTemporaryCapacityError || attempt === 2) {
+          console.error("AI extraction error:", extractionError);
+          setExtractionMessage(
+            `AI extraction failed: ${detailedMessage}${
+              isTemporaryCapacityError
+                ? " Please wait a moment and try again."
+                : ""
+            }`,
+          );
           return;
         }
 
-        resolve(result.split(",")[1]);
-      };
+        setExtractionMessage(
+          `AI service is busy. Retrying (${attempt + 1}/2)...`,
+        );
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1500 * (attempt + 1)),
+        );
+      }
 
-      reader.onerror = () => reject(new Error("Could not read the image."));
-      reader.readAsDataURL(file);
-    });
+      if (extractionError) {
+        throw extractionError;
+      }
 
-    const { data, error } = await supabase.functions.invoke(
-      "rapid-processor",
-      {
-        body: {
-          imageBase64,
-          mimeType: file.type,
-        },
-      },
-    );
+      if (!data?.success || !data?.extracted) {
+        throw new Error(data?.error || "Could not extract warranty details.");
+      }
 
-    if (error) throw error;
-    if (!data?.success || !data?.extracted) {
-      throw new Error(data?.error || "Could not extract warranty details.");
-    }
+      const extracted = data.extracted;
 
-    const extracted = data.extracted;
+      setFormData((previous) => {
+        const updated = { ...previous };
 
-    setFormData((previous) => {
-      const updated = { ...previous };
+        const fields = [
+          "product_name",
+          "brand",
+          "category",
+          "model",
+          "serial_number",
+          "invoice_number",
+          "purchase_date",
+          "warranty_months",
+          "warranty_expiry",
+          "store_name",
+          "purchase_price",
+          "notes",
+        ];
 
-      const fields = [
-        "product_name",
-        "brand",
-        "category",
-        "model",
-        "serial_number",
-        "invoice_number",
-        "purchase_date",
-        "warranty_months",
-        "warranty_expiry",
-        "store_name",
-        "purchase_price",
-        "notes",
-      ];
+        fields.forEach((field) => {
+          const value = extracted[field];
 
-      fields.forEach((field) => {
-        const value = extracted[field];
+          if (value !== null && value !== undefined && value !== "") {
+            updated[field] = String(value);
+          }
+        });
 
-        if (value !== null && value !== undefined && value !== "") {
-          updated[field] = String(value);
-        }
+        return updated;
       });
 
-      return updated;
+      setExtractionMessage(
+        "Details extracted! Please review them before saving.",
+      );
+    } catch (error) {
+      console.error("Warranty extraction error:", error);
+      setExtractionMessage(
+        error.message || "Could not analyze the warranty card.",
+      );
+    } finally {
+      setExtracting(false);
+    }
+  };
+
+  const getBarcodeCategory = (product) => {
+    const details = [
+      product.product_name,
+      product.categories,
+      ...(product.categories_tags || []),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    if (/vehicle|car|motorcycle|bicycle|automotive/.test(details)) {
+      return "Vehicles";
+    }
+    if (
+      /washing machine|refrigerator|dishwasher|air conditioner|microwave|household appliance/.test(
+        details,
+      )
+    ) {
+      return "Appliances";
+    }
+    if (
+      /electronics|computer|laptop|mobile phone|smartphone|tablet|television|camera|headphone/.test(
+        details,
+      )
+    ) {
+      return "Personal electronics";
+    }
+    if (/business|industrial|office equipment/.test(details)) {
+      return "Business assets";
+    }
+    if (
+      /household|furniture|kitchen|cleaning product|home appliance/.test(
+        details,
+      )
+    ) {
+      return "Home & household products";
+    }
+    if (/food|beverage|snack|noodle|cereal/.test(details)) {
+      return "Other";
+    }
+
+    return "";
+  };
+
+  const getCatalogBarcode = (barcode) => {
+    const gs1Match = barcode.trim().match(/^(?:\]C1)?01(\d{14})$/);
+    const catalogBarcode = gs1Match?.[1] || barcode.trim();
+
+    return /^\d+$/.test(catalogBarcode) &&
+      [8, 12, 13, 14].includes(catalogBarcode.length)
+      ? catalogBarcode
+      : null;
+  };
+
+  const lookupBarcodeProduct = async (barcode, format) => {
+    const catalogBarcode = getCatalogBarcode(barcode);
+
+    if (!catalogBarcode) {
+      setBarcodeError(
+        `Scanned ${format} successfully, but this ${barcode.length}-character code is not a standard EAN/UPC/GTIN. Product lookup requires an 8, 12, 13, or 14-digit code.`,
+      );
+      return;
+    }
+
+    setLookingUpBarcode(true);
+    setBarcodeError("");
+
+    try {
+      const productUrl = new URL(
+        `https://world.openfoodfacts.org/api/v3/product/${encodeURIComponent(catalogBarcode)}`,
+      );
+      productUrl.searchParams.set("product_type", "all");
+      productUrl.searchParams.set(
+        "fields",
+        "product_name,product_name_en,brands,categories,categories_tags",
+      );
+
+      const response = await fetch(productUrl);
+      if (response.status === 404) {
+        setBarcodeError(
+          "Barcode read, but this product is not listed in the catalog. Enter the details manually.",
+        );
+        return;
+      }
+      if (!response.ok) {
+        throw new Error("The product catalog is temporarily unavailable.");
+      }
+
+      const result = await response.json();
+      const product = result.product;
+      const productName =
+        product?.product_name?.trim() || product?.product_name_en?.trim() || "";
+      const brand = product?.brands?.split(",")[0]?.trim() || "";
+      const category = product ? getBarcodeCategory(product) : "";
+
+      if (!productName && !brand && !category) {
+        setBarcodeError(
+          "Barcode read, but no product details were found in the catalog. Enter the details manually.",
+        );
+        return;
+      }
+
+      setFormData((previous) => ({
+        ...previous,
+        ...(productName && !previous.product_name.trim()
+          ? { product_name: productName }
+          : {}),
+        ...(brand && !previous.brand.trim() ? { brand } : {}),
+        ...(category && !previous.category ? { category } : {}),
+      }));
+      setBarcodeResult((previous) => ({
+        ...previous,
+        productName,
+        brand,
+      }));
+    } catch (error) {
+      console.error("Barcode product lookup error:", error);
+      setBarcodeError(
+        error instanceof TypeError
+          ? "Barcode read, but the catalog could not be reached. Check your connection or enter the details manually."
+          : `${error.message} Enter the details manually.`,
+      );
+    } finally {
+      setLookingUpBarcode(false);
+    }
+  };
+
+  const handleDetectedBarcode = async (barcode, format) => {
+    const value = barcode.trim();
+
+    setBarcodeResult({ value, format });
+    await lookupBarcodeProduct(value, format);
+  };
+
+  const scanBarcodeImage = async (file) => {
+    if (!file) return;
+
+    setBarcodeError("");
+    setBarcodeResult(null);
+    setReadingBarcodeImage(true);
+
+    const scanner = new Html5Qrcode("barcode-reader", {
+      formatsToSupport: BARCODE_FORMATS,
+      useBarCodeDetectorIfSupported: true,
     });
 
-    
-    setExtractionMessage(
-      "Details extracted! Please review them before saving.",
-    );
-  } catch (error) {
-    console.error("Warranty extraction error:", error);
-    setExtractionMessage(
-      error.message || "Could not analyze the warranty card.",
-    );
-  } finally {
-    setExtracting(false);
-  }
-};
+    try {
+      const result = await scanner.scanFileV2(file, false);
+      const format =
+        result.result.format?.formatName?.replaceAll("_", "-") || "Barcode";
 
+      await handleDetectedBarcode(result.decodedText, format);
+    } catch (error) {
+      console.error("Barcode image scan error:", error);
+      setBarcodeError(
+        "No supported barcode was found in that photo. Use a clear, straight-on image or try the live scanner.",
+      );
+    } finally {
+      scanner.clear();
+      setReadingBarcodeImage(false);
+    }
+  };
+
+  const startBarcodeScanner = async () => {
+    setBarcodeError("");
+    setBarcodeResult(null);
+
+    let scanner;
+    let hasDecodedBarcode = false;
+
+    try {
+      scanner = new Html5Qrcode("barcode-reader", {
+        formatsToSupport: BARCODE_FORMATS,
+        useBarCodeDetectorIfSupported: true,
+      });
+      qrScannerRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: (viewfinderWidth, viewfinderHeight) => ({
+            width: Math.floor(viewfinderWidth * 0.9),
+            height: Math.min(
+              160,
+              Math.max(60, Math.floor(viewfinderHeight * 0.35)),
+            ),
+          }),
+        },
+        async (decodedText, result) => {
+          if (hasDecodedBarcode) return;
+          hasDecodedBarcode = true;
+
+          const format =
+            result.result.format?.formatName?.replaceAll("_", "-") || "Barcode";
+
+          setScanningBarcode(false);
+
+          try {
+            await scanner.stop();
+            scanner.clear();
+            if (qrScannerRef.current === scanner) qrScannerRef.current = null;
+          } catch (stopError) {
+            console.error("Could not stop barcode scanner:", stopError);
+          }
+
+          await handleDetectedBarcode(decodedText, format);
+        },
+        () => {},
+      );
+
+      setScanningBarcode(true);
+    } catch (error) {
+      console.error("Barcode scanner error:", error);
+      setBarcodeError(
+        "Could not start the camera. Allow camera access and try again.",
+      );
+      setScanningBarcode(false);
+
+      try {
+        if (scanner?.isScanning) await scanner.stop();
+        scanner?.clear();
+      } catch (cleanupError) {
+        console.error("Could not clean up barcode scanner:", cleanupError);
+      }
+
+      if (qrScannerRef.current === scanner) qrScannerRef.current = null;
+    }
+  };
+
+  const stopBarcodeScanner = async () => {
+    const scanner = qrScannerRef.current;
+
+    try {
+      if (scanner?.isScanning) await scanner.stop();
+      scanner?.clear();
+    } catch (error) {
+      console.error("Could not stop barcode scanner:", error);
+      setBarcodeError("Could not stop the camera cleanly. Please try again.");
+    } finally {
+      qrScannerRef.current = null;
+      setScanningBarcode(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -253,10 +568,6 @@ const handleWarrantyExtraction = async (file) => {
         ])
         .select("id")
         .single();
-
-      if (insertError) {
-        throw insertError;
-      }
 
       if (insertError) {
         throw insertError;
@@ -491,17 +802,308 @@ const handleWarrantyExtraction = async (file) => {
         </motion.section>
 
         {/* Notice */}
-        {activeMethod !== "manual" && activeMethod !== "photo" && (
-          <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 text-sm text-blue-700">
-            <span className="font-semibold">
-              {activeMethod === "upload" && "Upload Bill"}
-              {activeMethod === "scan" && "Scan Bill"}
-              {activeMethod === "qr" && "Scan QR Code"}
-              {activeMethod === "barcode" && "Scan Barcode"}
-            </span>{" "}
-            will be implemented in the next step. For now, you can enter the
-            product details manually below.
-          </div>
+        {["scan", "qr", "barcode"].includes(activeMethod) && (
+          <>
+            {activeMethod === "qr" ? (
+              <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+                <h3 className="font-semibold text-blue-800">
+                  Scan Warranty QR Code
+                </h3>
+                <p className="mt-1 text-sm text-blue-700">
+                  Use your camera to scan the QR code on your product or
+                  warranty card.
+                </p>
+
+                <div
+                  id="qr-reader"
+                  ref={qrScannerRef}
+                  className="mt-4 w-full max-w-md"
+                />
+
+                {!scanningQR && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        setQrResult("");
+                        setQrError("");
+
+                        const scanner = new Html5Qrcode("qr-reader");
+                        qrScannerRef.current = scanner;
+                        await scanner.start(
+                          { facingMode: "environment" },
+                          { fps: 10, qrbox: { width: 250, height: 250 } },
+                          async (decodedText) => {
+                            setQrResult(decodedText);
+                            setScanningQR(false);
+
+                            const value = decodedText.trim();
+
+                            try {
+                              // Try to read structured JSON product details from the QR code.
+                              const product = JSON.parse(value);
+
+                              if (
+                                product &&
+                                typeof product === "object" &&
+                                !Array.isArray(product)
+                              ) {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  product_name:
+                                    product.product_name ||
+                                    product.productName ||
+                                    prev.product_name,
+                                  brand: product.brand || prev.brand,
+                                  model: product.model || prev.model,
+                                  serial_number:
+                                    product.serial_number ||
+                                    product.serialNumber ||
+                                    prev.serial_number,
+                                  invoice_number:
+                                    product.invoice_number ||
+                                    product.invoiceNumber ||
+                                    prev.invoice_number,
+                                  purchase_date:
+                                    product.purchase_date ||
+                                    product.purchaseDate ||
+                                    prev.purchase_date,
+                                  warranty_months:
+                                    product.warranty_months ??
+                                    product.warrantyMonths ??
+                                    prev.warranty_months,
+                                  warranty_expiry:
+                                    product.warranty_expiry ||
+                                    product.warrantyExpiry ||
+                                    prev.warranty_expiry,
+                                }));
+                                setQrError(
+                                  "Product details were filled from the QR code.",
+                                );
+                              } else {
+                                setQrError(
+                                  "This QR code does not contain structured product details.",
+                                );
+                              }
+                            } catch {
+                              if (/^https?:\/\//i.test(value)) {
+                                setQrError(
+                                  "This QR code contains a website link. Automatic product lookup is not configured yet.",
+                                );
+                              } else {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  serial_number: prev.serial_number || value,
+                                }));
+                                setQrError(
+                                  "Only a product identifier was found. Other details need to be entered manually.",
+                                );
+                              }
+                            }
+
+                            try {
+                              await scanner.stop();
+                              scanner.clear();
+                              qrScannerRef.current = null;
+                            } catch (stopError) {
+                              console.error(
+                                "Could not stop QR scanner:",
+                                stopError,
+                              );
+                            }
+                          },
+                          () => {},
+                        );
+
+                        setScanningQR(true);
+                      } catch (err) {
+                        setQrError(
+                          "Could not start the camera. Please allow camera access and try again.",
+                        );
+                        setScanningQR(false);
+                        console.error("QR scanner error:", err);
+                      }
+                    }}
+                    className="mt-4 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700"
+                  >
+                    Start QR Scanner
+                  </button>
+                )}
+
+                {qrResult && (
+                  <p className="mt-3 break-all text-sm text-green-700">
+                    Scanned result: {qrResult}
+                  </p>
+                )}
+
+                {qrError && (
+                  <p className="mt-3 text-sm text-red-600">{qrError}</p>
+                )}
+              </div>
+            ) : (
+              <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 text-sm text-blue-700">
+                <span className="font-semibold">
+                  {activeMethod === "scan" && "Scan Bill"}
+                  {activeMethod === "barcode" && "Scan Barcode"}
+                </span>{" "}
+                {activeMethod === "scan" ? (
+                  <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+                    <h3 className="font-semibold text-blue-800">
+                      Scan Purchase Bill
+                    </h3>
+
+                    <p className="mt-1 text-sm text-blue-700">
+                      Take a clear photo of your bill to extract purchase and
+                      warranty details.
+                    </p>
+
+                    <input
+                      id="scan-bill-input"
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={(e) => {
+                        setScannedBill(e.target.files?.[0] || null);
+                        setExtractionMessage("");
+                      }}
+                      className="hidden"
+                    />
+
+                    <label
+                      htmlFor="scan-bill-input"
+                      className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M14 4h6v6" />
+                        <path d="M20 4 12 12" />
+                        <path d="M20 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5" />
+                      </svg>
+                      Scan Bill
+                    </label>
+
+                    {scannedBill && (
+                      <>
+                        <p className="mt-3 text-sm text-slate-600">
+                          Selected: {scannedBill.name}
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={() => handleWarrantyExtraction(scannedBill)}
+                          disabled={extracting}
+                          className="mt-4 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          {extracting
+                            ? "Analyzing bill..."
+                            : "Extract Bill Details"}
+                        </button>
+                      </>
+                    )}
+
+                    {extractionMessage && (
+                      <p className="mt-3 text-sm text-slate-600">
+                        {extractionMessage}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+                    <h3 className="font-semibold text-blue-800">
+                      Scan Barcode
+                    </h3>
+                    <p className="mt-1 text-sm text-blue-700">
+                      Center the barcode horizontally in the frame, or scan a
+                      clear barcode photo. A catalog match can fill the product
+                      name, brand, and category.
+                    </p>
+                    <div
+                      id="barcode-reader"
+                      className="mt-4 w-full max-w-md overflow-hidden rounded-xl"
+                    />
+                    {lookingUpBarcode || readingBarcodeImage ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="mt-4 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white opacity-60"
+                      >
+                        {readingBarcodeImage
+                          ? "Reading barcode photo..."
+                          : "Looking up product details..."}
+                      </button>
+                    ) : scanningBarcode ? (
+                      <button
+                        type="button"
+                        onClick={stopBarcodeScanner}
+                        className="mt-4 rounded-xl border border-slate-300 bg-white px-5 py-3 font-medium text-slate-700 hover:bg-slate-50"
+                      >
+                        Stop Camera
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={startBarcodeScanner}
+                        className="mt-4 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700"
+                      >
+                        Start Barcode Scanner
+                      </button>
+                    )}
+                    <label className="mt-4 block text-sm font-medium text-slate-700">
+                      Scan from a photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        disabled={
+                          scanningBarcode ||
+                          readingBarcodeImage ||
+                          lookingUpBarcode
+                        }
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          event.target.value = "";
+                          scanBarcodeImage(file);
+                        }}
+                        className="mt-2 block w-full text-sm font-normal text-slate-600 disabled:opacity-50"
+                      />
+                    </label>
+                    {barcodeResult && (
+                      <p
+                        className="mt-3 break-all text-sm text-green-700"
+                        aria-live="polite"
+                      >
+                        Scanned {barcodeResult.format}: {barcodeResult.value}
+                      </p>
+                    )}
+                    {(barcodeResult?.productName || barcodeResult?.brand) && (
+                      <p className="mt-2 text-sm text-green-700">
+                        Catalog match: {barcodeResult.productName}
+                        {barcodeResult.productName && barcodeResult.brand
+                          ? " | "
+                          : ""}
+                        {barcodeResult.brand}. Matching details were added to
+                        empty form fields.
+                      </p>
+                    )}
+                    {barcodeError && (
+                      <p className="mt-3 text-sm text-red-600" role="alert">
+                        {barcodeError}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
 
         {/* Manual form */}
@@ -645,62 +1247,106 @@ const handleWarrantyExtraction = async (file) => {
                 />
               </div>
 
-             
-{/* Product Photo Upload */}
-{activeMethod === "photo" && (
-  <div>
-    <label className="mb-2 block text-sm font-medium text-slate-700">
-      Product Photo
-    </label>
-    <input
-      type="file"
-      accept="image/*"
-      onChange={(e) => setProductPhoto(e.target.files[0] || null)}
-      className={inputClass}
-    />
-  </div>
-)}
+              {/* Product Photo Upload */}
 
-{/* Invoice / Warranty Document — Manual Entry only */}
-{/* Invoice / Warranty Document — Product Photo mode only */}
-{activeMethod === "photo" && (
-  <div>
-    <label className="mb-2 block text-sm font-medium text-slate-700">
-      Invoice / Warranty Document
-    </label>
-    <input
-      type="file"
-      accept="image/*,.pdf"
-      onChange={(e) => setInvoiceDocument(e.target.files[0] || null)}
-      className={inputClass}
-    />
+              {/* Product Photo Upload */}
+              {activeMethod === "photo" && (
+                <div className="md:col-span-2 xl:col-span-3">
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    Product Photo
+                  </label>
 
-    <button
-      type="button"
-      onClick={() => handleWarrantyExtraction(invoiceDocument)}
-      disabled={
-        extracting ||
-        !invoiceDocument ||
-        !["image/jpeg", "image/png", "image/webp"].includes(
-          invoiceDocument?.type
-        )
-      }
-      className="mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-    >
-      {extracting ? "Analyzing warranty card..." : "Extract Details with AI"}
-    </button>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setProductPhoto(file);
+                    }}
+                    className={inputClass}
+                  />
 
-    {extractionMessage && (
-      <p className="mt-2 text-sm text-slate-600">
-        {extractionMessage}
-      </p>
-    )}
-  </div>
-)}
+                  {productPhoto && (
+                    <div className="mt-4">
+                      <p className="mb-2 text-sm font-medium text-slate-700">
+                        Photo preview
+                      </p>
 
-              
+                      <img
+                        src={URL.createObjectURL(productPhoto)}
+                        alt="Product preview"
+                        className="h-48 w-48 rounded-xl border border-slate-200 object-cover"
+                      />
 
+                      <button
+                        type="button"
+                        onClick={() => setProductPhoto(null)}
+                        className="mt-3 block text-sm font-medium text-red-600 hover:text-red-700"
+                      >
+                        Remove photo
+                      </button>
+                    </div>
+                  )}
 
+                  <button
+                    type="button"
+                    onClick={() => handleWarrantyExtraction(productPhoto)}
+                    disabled={extracting || !productPhoto}
+                    className="mt-4 rounded-xl bg-indigo-600 px-5 py-3 font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {extracting
+                      ? "Analyzing product photo..."
+                      : "Extract Details with AI"}
+                  </button>
+
+                  {extractionMessage && (
+                    <p className="mt-3 text-sm text-slate-600">
+                      {extractionMessage}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Invoice / Warranty Document — Manual Entry only */}
+              {/* Invoice / Warranty Document — Upload Bill mode only */}
+              {activeMethod === "upload" && (
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
+                    Invoice / Warranty Document
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) =>
+                      setInvoiceDocument(e.target.files[0] || null)
+                    }
+                    className={inputClass}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => handleWarrantyExtraction(invoiceDocument)}
+                    disabled={
+                      extracting ||
+                      !invoiceDocument ||
+                      !["image/jpeg", "image/png", "image/webp"].includes(
+                        invoiceDocument?.type,
+                      )
+                    }
+                    className="mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {extracting
+                      ? "Analyzing warranty card..."
+                      : "Extract Details with AI"}
+                  </button>
+
+                  {extractionMessage && (
+                    <p className="mt-2 text-sm text-slate-600">
+                      {extractionMessage}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Invoice */}
               <div>
