@@ -13,6 +13,7 @@ import BookService from "../pages/BookService";
 import Notifications from "../pages/Notifications";
 import Profile from "../pages/Profile";
 import Settings from "../pages/Settings";
+import ProductHealth from "../pages/ProductHealth";
 import MaintenanceCalendar from "../pages/MaintenanceCalendar";
 import NotFound from "../pages/NotFound";
 
@@ -28,8 +29,11 @@ function AppRoutes() {
       {/* Dashboard */}
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/products" element={<Products />} />
-      <Route path="/add-asset" element={<AddAsset />} />
+    <Route path="/add-asset" element={<AddAsset />} />
       <Route path="/onboarding" element={<Onboarding />} />
+
+      {/* Product Health */}
+      <Route path="/health" element={<ProductHealth />} />
 
       {/* Service Management */}
       <Route
