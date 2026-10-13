@@ -1,11 +1,11 @@
-
+import Products from "../pages/Products";
+import EnergyEco from "../pages/EnergyEco";
 import { Routes, Route } from "react-router-dom";
 
 import Landing from "../pages/Landing";
 import Login from "../pages/Login";
 import Signup from "../pages/Signup";
 import Dashboard from "../pages/Dashboard";
-import Products from "../pages/Products";
 import AddAsset from "../pages/AddAsset";
 import Onboarding from "../pages/Onboarding";
 import ServiceHistory from "../pages/ServiceHistory";
@@ -49,7 +49,7 @@ function AppRoutes() {
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/settings" element={<Settings />} />
-
+<Route path="/energy-eco" element={<EnergyEco />} />
       {/* 404 Page */}
       <Route path="*" element={<NotFound />} />
       <Route path="/calendar" element={<MaintenanceCalendar />}/>

@@ -44,8 +44,8 @@ function DashboardSidebar({ open, onClose }) {
     {
       title: "Care",
       items: [
-        { label: "Service History", icon: FiTool, path: "#" },
-        { label: "Book Service", icon: FiCalendar, path: "#" },
+        { label: "Service History", icon: FiTool, path: "/service-history" },
+        { label: "Book Service", icon: FiCalendar, path: "/book-service" },
         { label: "Smart Reminders", icon: FiCalendar, path: "#" },
         { label: "Calendar", icon: FiCalendar, path: "/calendar" },
       ],
@@ -64,8 +64,8 @@ function DashboardSidebar({ open, onClose }) {
       items: [
         { label: "Analytics", icon: FiBarChart2, path: "#" },
         { label: "Resale Center", icon: FiShoppingBag, path: "#" },
-        { label: "Smart Shopping", icon: FiShoppingBag, path: "#" },
-        { label: "Energy & Eco", icon: FiBarChart2, path: "#" },
+        { label: "Smart Shopping", icon: FiShoppingBag, path: "/shopping" },
+        { label: "Energy & Eco", icon: FiBarChart2, path: "/energy-eco" },
       ],
     },
     {
