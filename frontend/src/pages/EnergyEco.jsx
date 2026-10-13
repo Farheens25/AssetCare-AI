@@ -5,7 +5,6 @@ import {
   FiFeather,
   FiWind,
   FiDroplet,
-  FiTrendingDown,
   FiMenu,
   FiSun,
   FiCheckCircle,
@@ -63,7 +62,9 @@ function getLastSixMonths() {
       key: `${date.getFullYear()}-${String(
         date.getMonth() + 1
       ).padStart(2, "0")}`,
-      month: date.toLocaleString("en-IN", { month: "short" }),
+      month: date.toLocaleString("en-IN", {
+        month: "short",
+      }),
       units: 0,
     };
   });
@@ -125,12 +126,18 @@ function EnergyEco() {
 
         if (cancelled) return;
 
-        const usageByMonth = new Map(
-          (usageResult.data || []).map((record) => [
-            String(record.month_start).slice(0, 7),
-            Number(record.units_kwh),
-          ])
-        );
+        // Add together all usage records belonging to the same month.
+        const usageByMonth = new Map();
+
+        (usageResult.data || []).forEach((record) => {
+          const monthKey = String(record.month_start).slice(0, 7);
+          const units = Number(record.units_kwh) || 0;
+
+          usageByMonth.set(
+            monthKey,
+            (usageByMonth.get(monthKey) || 0) + units
+          );
+        });
 
         const updatedMonths = months.map((month) => ({
           ...month,
@@ -138,17 +145,18 @@ function EnergyEco() {
         }));
 
         setMonthlyUsage(updatedMonths);
-        setHasUsageRecords(
-          (usageResult.data || []).length > 0
-        );
+        setHasUsageRecords((usageResult.data || []).length > 0);
         setCompletedTips(
-          (tipsResult.data || []).map((item) => item.tip_id)
+          [
+            ...new Set(
+              (tipsResult.data || []).map((item) => item.tip_id)
+            ),
+          ].filter((id) => ecoTips.some((tip) => tip.id === id))
         );
       } catch (error) {
         if (!cancelled) {
           setErrorMessage(
-            error.message ||
-              "Unable to load Energy & Eco data."
+            error.message || "Unable to load Energy & Eco data."
           );
         }
       } finally {
@@ -164,6 +172,7 @@ function EnergyEco() {
   }, []);
 
   async function toggleTip(tipId) {
+    // Prevent duplicate requests for the same tip.
     if (savingTips.includes(tipId)) return;
 
     setErrorMessage("");
@@ -205,7 +214,11 @@ function EnergyEco() {
 
         if (error) throw error;
 
-        setCompletedTips((previous) => [...previous, tipId]);
+        setCompletedTips((previous) =>
+          previous.includes(tipId)
+            ? previous
+            : [...previous, tipId]
+        );
       }
     } catch (error) {
       setErrorMessage(
@@ -229,9 +242,14 @@ function EnergyEco() {
     ...monthlyUsage.map((month) => month.units)
   );
 
-  const usageScale = Math.ceil(maxUsage / 4 / 100) * 100;
+  const chartMax = Math.ceil(maxUsage / 4 / 100) * 100 * 4;
 
-  const chartMax = Math.max(1800, usageScale * 4);
+  const completedCount = ecoTips.filter((tip) =>
+    completedTips.includes(tip.id)
+  ).length;
+
+  const completionPercentage =
+    (completedCount / ecoTips.length) * 100;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -262,6 +280,7 @@ function EnergyEco() {
         </header>
 
         <div className="mx-auto max-w-7xl space-y-7 p-5 sm:p-8">
+          {/* Page heading */}
           <section>
             <div className="flex items-center gap-3">
               <div className="rounded-2xl bg-emerald-100 p-3 text-emerald-700">
@@ -279,6 +298,7 @@ function EnergyEco() {
             </div>
           </section>
 
+          {/* Error message */}
           {errorMessage && (
             <div
               role="alert"
@@ -291,6 +311,7 @@ function EnergyEco() {
             </div>
           )}
 
+          {/* Loading message */}
           {loading && (
             <p
               role="status"
@@ -300,6 +321,7 @@ function EnergyEco() {
             </p>
           )}
 
+          {/* Summary cards */}
           <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
@@ -312,11 +334,7 @@ function EnergyEco() {
               </div>
 
               <p className="mt-5 text-3xl font-bold">
-                {loading
-                  ? "..."
-                  : hasUsageRecords
-                    ? "—"
-                    : "N/A"}
+                {loading ? "..." : hasUsageRecords ? "—" : "N/A"}
               </p>
 
               <p className="mt-2 text-sm text-slate-500">
@@ -343,7 +361,7 @@ function EnergyEco() {
               </p>
 
               <p className="mt-2 text-sm text-slate-500">
-                Total recorded usage across the displayed six months
+                Total recorded usage across the displayed six months.
               </p>
 
               {!loading && !hasUsageRecords && (
@@ -370,11 +388,12 @@ function EnergyEco() {
               </p>
 
               <p className="mt-3 text-xs text-slate-400">
-                Requires a suitable emissions factor and defined reporting period.
+                Requires an emissions factor and a defined reporting period.
               </p>
             </div>
           </section>
 
+          {/* Monthly usage chart */}
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -382,7 +401,7 @@ function EnergyEco() {
                   Monthly electricity usage
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Recorded consumption from your Supabase database
+                  Recorded consumption from your Supabase database.
                 </p>
               </div>
 
@@ -394,7 +413,7 @@ function EnergyEco() {
             {!loading && !hasUsageRecords && (
               <p className="mt-5 rounded-lg bg-slate-50 p-4 text-sm text-slate-500">
                 No electricity records found for the last six months.
-                Once usage records are saved, they will appear here.
+                Saved usage records will appear here.
               </p>
             )}
 
@@ -402,7 +421,7 @@ function EnergyEco() {
               <div className="flex flex-col justify-between pb-7 text-right text-xs text-slate-400">
                 {[4, 3, 2, 1, 0].map((value) => (
                   <span key={value}>
-                    {Math.round((chartMax * value) / 4)}
+                    {Math.round((chartMax * value) / 4).toLocaleString("en-IN")}
                   </span>
                 ))}
               </div>
@@ -412,55 +431,56 @@ function EnergyEco() {
                   <div
                     key={value}
                     className="pointer-events-none absolute left-0 right-0 border-t border-dashed border-slate-100"
-                    style={{
-                      bottom: `${(value / 4) * 100}%`,
-                    }}
+                    style={{ bottom: `${(value / 4) * 100}%` }}
                   />
                 ))}
 
-                {monthlyUsage.map((item) => (
-                  <div
-                    key={item.key}
-                    className="relative z-10 flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2"
-                  >
-                    <span className="text-[10px] font-medium text-slate-500 sm:text-xs">
-                      {item.units > 0
-                        ? item.units.toLocaleString("en-IN")
-                        : "—"}
-                    </span>
+                {monthlyUsage.map((item) => {
+                  const barHeight =
+                    item.units > 0
+                      ? Math.max(2, (item.units / chartMax) * 100)
+                      : 0;
 
+                  return (
                     <div
-                      title={`${item.month}: ${item.units} kWh recorded`}
-                      className={`w-full max-w-12 rounded-t-lg transition-all ${
-                        item.units > 0
-                          ? "bg-gradient-to-t from-blue-600 to-sky-400 hover:opacity-80"
-                          : "bg-slate-100"
-                      }`}
-                      style={{
-                        height:
-                          item.units > 0
-                            ? `${Math.max(
-                                2,
-                                (item.units / chartMax) * 78
-                              )}%`
-                            : "2px",
-                      }}
-                    />
+                      key={item.key}
+                      className="relative z-10 flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2"
+                    >
+                      <span className="text-[10px] font-medium text-slate-500 sm:text-xs">
+                        {item.units > 0
+                          ? item.units.toLocaleString("en-IN")
+                          : "—"}
+                      </span>
 
-                    <span className="absolute -bottom-6 text-xs text-slate-500">
-                      {item.month}
-                    </span>
-                  </div>
-                ))}
+                      <div
+                        title={`${item.month}: ${item.units} kWh recorded`}
+                        className={`w-full max-w-12 rounded-t-lg transition-all ${
+                          item.units > 0
+                            ? "bg-gradient-to-t from-blue-600 to-sky-400 hover:opacity-80"
+                            : "bg-slate-100"
+                        }`}
+                        style={{
+                          height: `${barHeight}%`,
+                          minHeight: item.units > 0 ? "2px" : "0",
+                        }}
+                      />
+
+                      <span className="absolute -bottom-6 text-xs text-slate-500">
+                        {item.month}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
             <p className="mt-10 text-xs text-slate-400">
-              Months without a recorded value are displayed as zero-height bars.
-              These are database records, not automatic meter readings.
+              Months without recorded usage have no bar. These values come
+              from saved database records, not automatic meter readings.
             </p>
           </section>
 
+          {/* Eco tips */}
           <section>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -471,16 +491,21 @@ function EnergyEco() {
               </div>
 
               <span className="rounded-lg bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
-                {completedTips.length} / {ecoTips.length} completed
+                {completedCount} / {ecoTips.length} completed
               </span>
             </div>
 
-            <div className="mb-5 h-2 overflow-hidden rounded-full bg-slate-200">
+            <div
+              className="mb-5 h-2 overflow-hidden rounded-full bg-slate-200"
+              role="progressbar"
+              aria-valuenow={completedCount}
+              aria-valuemin={0}
+              aria-valuemax={ecoTips.length}
+              aria-label="Completed eco tips"
+            >
               <div
                 className="h-full rounded-full bg-emerald-500 transition-all"
-                style={{
-                  width: `${(completedTips.length / ecoTips.length) * 100}%`,
-                }}
+                style={{ width: `${completionPercentage}%` }}
               />
             </div>
 
