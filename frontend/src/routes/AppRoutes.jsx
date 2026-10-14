@@ -1,7 +1,7 @@
 import Products from "../pages/Products";
 import EnergyEco from "../pages/EnergyEco";
 import { Routes, Route } from "react-router-dom";
-
+import DocumentVault from "../pages/DocumentVault";
 import Landing from "../pages/Landing";
 import Login from "../pages/Login";
 import Signup from "../pages/Signup";
@@ -18,7 +18,8 @@ import ProductHealth from "../pages/ProductHealth";
 import MaintenanceCalendar from "../pages/MaintenanceCalendar";
 import NotFound from "../pages/NotFound";
 import FamilyMode from "../pages/FamilyMode";
-
+import AssetDetails from "../pages/AssetDetails";
+import AIAssistant from "../pages/AIAssistant";
 function AppRoutes() {
   return (
     <Routes>
@@ -30,6 +31,7 @@ function AppRoutes() {
       {/* Dashboard */}
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/home-assets" element={<HomeAsset />} />
+      <Route path="/ai-assistant" element={<AIAssistant />} />
       <Route path="/products" element={<Products />} />
     <Route path="/add-asset" element={<AddAsset />} />
       <Route path="/onboarding" element={<Onboarding />} />
@@ -48,12 +50,14 @@ function AppRoutes() {
       />
 
       {/* Other Pages */}
+      <Route path="/document-vault" element={<DocumentVault />} />
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/settings" element={<Settings />} />
 <Route path="/energy-eco" element={<EnergyEco />} />
       {/* 404 Page */}
       <Route path="*" element={<NotFound />} />
+      <Route path="/products/:id" element={<AssetDetails />} />
       <Route path="/calendar" element={<MaintenanceCalendar />}/>
       <Route path="/family" element={<FamilyMode />}/>
     </Routes>

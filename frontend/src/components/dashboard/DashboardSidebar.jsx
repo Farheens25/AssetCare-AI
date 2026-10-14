@@ -35,7 +35,7 @@ function DashboardSidebar({ open, onClose }) {
     {
       title: "Intelligence",
       items: [
-        { label: "AI Assistant", icon: FiMessageCircle, path: "#" },
+        { label: "AI Assistant", icon: FiMessageCircle, path: "/ai-assistant" },
         { label: "Product Health", icon: FiHeart, path: "/health" },
         { label: "Predictive Care", icon: FiTool, path: "#" },
         { label: "Repair vs Replace", icon: FiBarChart2, path: "#" },
@@ -54,7 +54,7 @@ function DashboardSidebar({ open, onClose }) {
       title: "Assets",
       items: [
         { label: "Home Assets", icon: FiHome, path: "/home-assets" },
-        { label: "Document Vault", icon: FiFileText, path: "#" },
+        { label: "Document Vault", icon: FiFileText, path: "/document-vault" },
         { label: "Insurance", icon: FiShield, path: "#" },
         { label: "Recalls", icon: FiSearch, path: "#" },
       ],

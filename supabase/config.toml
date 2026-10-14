@@ -1,0 +1,4 @@
+project_id = "assetcare-ai"
+
+[functions.asset-assistant]
+verify_jwt = true

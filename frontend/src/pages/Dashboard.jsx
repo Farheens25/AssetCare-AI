@@ -519,9 +519,7 @@ function Dashboard() {
                       {/* View details */}
                       <button
                         type="button"
-                        onClick={() =>
-                          alert("Asset Details page will be created next.")
-                        }
+                        onClick={() => navigate(`/products/${asset.id}`)}
                         className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
                       >
                         View Details
