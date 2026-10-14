@@ -53,7 +53,7 @@ function DashboardSidebar({ open, onClose }) {
     {
       title: "Assets",
       items: [
-        { label: "Home Assets", icon: FiHome, path: "#" },
+        { label: "Home Assets", icon: FiHome, path: "/home-assets" },
         { label: "Document Vault", icon: FiFileText, path: "#" },
         { label: "Insurance", icon: FiShield, path: "#" },
         { label: "Recalls", icon: FiSearch, path: "#" },

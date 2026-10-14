@@ -6,6 +6,7 @@ import Landing from "../pages/Landing";
 import Login from "../pages/Login";
 import Signup from "../pages/Signup";
 import Dashboard from "../pages/Dashboard";
+import HomeAsset from "../pages/HomeAsset";
 import AddAsset from "../pages/AddAsset";
 import Onboarding from "../pages/Onboarding";
 import ServiceHistory from "../pages/ServiceHistory";
@@ -28,6 +29,7 @@ function AppRoutes() {
 
       {/* Dashboard */}
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/home-assets" element={<HomeAsset />} />
       <Route path="/products" element={<Products />} />
     <Route path="/add-asset" element={<AddAsset />} />
       <Route path="/onboarding" element={<Onboarding />} />
