@@ -4,24 +4,31 @@ const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("theme") || "light";
+    const savedTheme = localStorage.getItem("theme");
+    return ["light", "dark", "system"].includes(savedTheme)
+      ? savedTheme
+      : "light";
   });
 
   useEffect(() => {
     const root = document.documentElement;
+    const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
 
-    // Set theme globally on <html>
-    root.setAttribute("data-theme", theme);
-
-    // Also add/remove the dark class.
-    // This makes the theme compatible with Tailwind dark: classes.
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
+    const applyTheme = () => {
+      const resolvedTheme =
+        theme === "system" ? (colorScheme.matches ? "dark" : "light") : theme;
+      root.setAttribute("data-theme", resolvedTheme);
+      root.classList.toggle("dark", resolvedTheme === "dark");
+    };
 
     localStorage.setItem("theme", theme);
+
+    applyTheme();
+    if (theme === "system") {
+      colorScheme.addEventListener("change", applyTheme);
+    }
+
+    return () => colorScheme.removeEventListener("change", applyTheme);
   }, [theme]);
 
   const toggleTheme = () => {
@@ -43,6 +50,8 @@ export const ThemeProvider = ({ children }) => {
   );
 };
 
+// The provider and its hook intentionally share this context module.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTheme = () => {
   const context = useContext(ThemeContext);
 

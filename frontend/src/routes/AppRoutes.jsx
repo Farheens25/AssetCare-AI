@@ -22,6 +22,8 @@ import DocumentVault from "../pages/DocumentVault";
 import FamilyMode from "../pages/FamilyMode";
 import AssetDetails from "../pages/AssetDetails";
 import AIAssistant from "../pages/AIAssistant";
+import RepairVsReplace from "../pages/RepairVsReplace";
+import PredictiveMaintenance from "../pages/PredictiveMaintenance";
 import SmartReminders from "../pages/SmartReminders";
 import SmartShopping from "../pages/SmartShopping";
 import EnergyEco from "../pages/EnergyEco";
@@ -119,26 +121,12 @@ function AppRoutes() {
       {/* AI and asset health */}
       <Route path="/ai-assistant" element={<AIAssistant />} />
       <Route path="/health" element={<ProductHealth />} />
-
+      <Route path="/predictive-care" element={<PredictiveMaintenance />} />
       <Route
-        path="/predictive-care"
-        element={
-          <FeaturePlaceholder
-            title="Predictive Care"
-            description="Explore maintenance predictions and upcoming care needs for your assets."
-          />
-        }
+        path="/predictive-maintenance"
+        element={<PredictiveMaintenance />}
       />
-
-      <Route
-        path="/repair-vs-replace"
-        element={
-          <FeaturePlaceholder
-            title="Repair vs Replace"
-            description="Compare repair costs with replacement options before making a decision."
-          />
-        }
-      />
+      <Route path="/repair-vs-replace" element={<RepairVsReplace />} />
 
       {/* Service management */}
       <Route path="/service-history" element={<ServiceHistory />} />

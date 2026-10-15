@@ -41,14 +41,18 @@ function MaintenanceCalendar() {
 
   const [user, setUser] = useState(null);
   const [assets, setAssets] = useState([]);
+  const [reminders, setReminders] = useState([]);
+  const [reminderError, setReminderError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   // ---------------------------------------
   // CURRENT CALENDAR DATE
   // ---------------------------------------
 
   const [currentDate, setCurrentDate] = useState(
-    new Date(2026, 8, 1)
+    () => new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   );
 
   // ---------------------------------------
@@ -88,15 +92,37 @@ function MaintenanceCalendar() {
 
         setUser(user);
         setAssets(data || []);
+        setLoadError("");
+        setReminderError(false);
+        if (data?.length) {
+          const { data: reminderRows, error: remindersError } = await supabase
+            .from("maintenance_reminders")
+            .select("id, asset_id, scheduled_date, task_description")
+            .eq("user_id", user.id)
+            .in(
+              "asset_id",
+              data.map((asset) => asset.id),
+            );
+          if (remindersError) {
+            console.error("Calendar reminder loading error:", remindersError);
+            setReminderError(true);
+            setReminders([]);
+          } else {
+            setReminders(reminderRows || []);
+          }
+        } else {
+          setReminders([]);
+        }
       } catch (error) {
         console.error("Calendar error:", error);
+        setLoadError("Unable to load your calendar. Please try again.");
       } finally {
         setLoading(false);
       }
     };
 
     loadCalendarData();
-  }, [navigate]);
+  }, [navigate, loadAttempt]);
 
   // ---------------------------------------
   // CALENDAR INFORMATION
@@ -138,10 +164,29 @@ function MaintenanceCalendar() {
       eventYear === year &&
       eventMonth === month
     ) {
-      calendarEvents[eventDay] = {
+      calendarEvents[eventDay] = calendarEvents[eventDay] || [];
+      calendarEvents[eventDay].push({
         label: `${asset.product_name || "Asset"} Warranty`,
         type: "warranty",
-      };
+      });
+    }
+  });
+
+  reminders.forEach((reminder) => {
+    const scheduledDate = new Date(`${reminder.scheduled_date}T00:00:00`);
+    if (
+      scheduledDate.getFullYear() === year &&
+      scheduledDate.getMonth() === month
+    ) {
+      const day = scheduledDate.getDate();
+      const asset = assets.find(
+        (item) => String(item.id) === String(reminder.asset_id),
+      );
+      calendarEvents[day] = calendarEvents[day] || [];
+      calendarEvents[day].push({
+        label: `${asset?.product_name || "Asset"} · ${reminder.task_description}`,
+        type: "maintenance",
+      });
     }
   });
 
@@ -358,6 +403,31 @@ function MaintenanceCalendar() {
         <main className="min-h-[calc(100vh-70px)] bg-gradient-to-br from-blue-50 via-white to-slate-50 px-5 py-8 lg:px-9">
 
           <div className="mx-auto max-w-7xl">
+            {loadError && (
+              <div
+                role="alert"
+                className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"
+              >
+                {loadError}
+                <button
+                  type="button"
+                  onClick={() => setLoadAttempt((attempt) => attempt + 1)}
+                  className="rounded-lg bg-white px-3 py-2 font-semibold"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {reminderError && (
+              <p
+                role="status"
+                className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
+              >
+                Scheduled maintenance reminders are unavailable. Apply the
+                predictive-maintenance migration in Supabase to view them here.
+              </p>
+            )}
 
             {/* =================================
                 HEADING
@@ -392,7 +462,7 @@ function MaintenanceCalendar() {
                   </h2>
 
                   <p className="mt-1 text-sm text-slate-500">
-                    Warranty dates from your assets
+                    Warranty and scheduled maintenance dates from your assets
                   </p>
 
                 </div>
@@ -491,15 +561,20 @@ function MaintenanceCalendar() {
 
                             {/* User asset warranty */}
 
-                            {event && (
-                              <div className="mt-5 inline-flex max-w-full rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700 md:text-xs">
-
+                            {event?.map((calendarEvent, eventIndex) => (
+                              <div
+                                key={`${calendarEvent.type}-${eventIndex}`}
+                                className={`mt-2 flex max-w-full rounded-full px-2 py-1 text-[10px] font-bold md:text-xs ${
+                                  calendarEvent.type === "maintenance"
+                                    ? "bg-violet-100 text-violet-700"
+                                    : "bg-amber-100 text-amber-700"
+                                }`}
+                              >
                                 <span className="truncate">
-                                  {event.label}
+                                  {calendarEvent.label}
                                 </span>
-
                               </div>
-                            )}
+                            ))}
 
                           </>
                         )}
@@ -518,7 +593,7 @@ function MaintenanceCalendar() {
               {Object.keys(calendarEvents).length ===
                 0 && (
                 <div className="mt-5 rounded-xl bg-slate-50 px-4 py-3 text-center text-sm text-slate-500">
-                  No warranty events for this month.
+                  No warranty or maintenance events for this month.
                 </div>
               )}
 
