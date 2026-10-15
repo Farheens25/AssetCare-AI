@@ -567,7 +567,7 @@ export default function ResaleCenter() {
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="min-h-screen lg:ml-72">
+      <div className="min-h-screen lg:ml-60">
         <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between gap-3 border-b border-slate-200/80 bg-white/90 px-4 backdrop-blur-md sm:px-7">
           <div className="flex min-w-0 items-center gap-3">
             <button

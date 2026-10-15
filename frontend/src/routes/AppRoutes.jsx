@@ -1,5 +1,7 @@
 
+import { useState } from "react";
 import { Routes, Route } from "react-router-dom";
+import { Menu } from "lucide-react";
 
 import Landing from "../pages/Landing";
 import Login from "../pages/Login";
@@ -25,36 +27,76 @@ import SmartShopping from "../pages/SmartShopping";
 import EnergyEco from "../pages/EnergyEco";
 import ResaleCenter from "../pages/ResaleCenter";
 import NotFound from "../pages/NotFound";
+import DashboardSidebar from "../components/dashboard/DashboardSidebar";
 
 // Temporary pages for features that do not have page files yet.
 function FeaturePlaceholder({ title, description }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10 lg:ml-72">
-      <div className="mx-auto max-w-5xl">
-        <p className="text-sm font-semibold text-sky-600">
-          AssetCare AI / Workspace
-        </p>
+    <>
+      <DashboardSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+      <main className="min-h-screen bg-slate-50 px-6 py-10 lg:ml-60">
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open navigation menu"
+          className="mb-6 rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 lg:hidden"
+        >
+          <Menu size={21} aria-hidden="true" />
+        </button>
 
-        <h1 className="mt-3 text-3xl font-bold text-slate-900">
-          {title}
-        </h1>
-
-        <p className="mt-3 max-w-2xl leading-7 text-slate-600">
-          {description}
-        </p>
-
-        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Coming soon
-          </h2>
-
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            This page is connected to navigation. Its complete functionality
-            can be implemented next.
+        <div className="mx-auto max-w-5xl">
+          <p className="text-sm font-semibold text-sky-600">
+            AssetCare AI / Workspace
           </p>
+
+          <h1 className="mt-3 text-3xl font-bold text-slate-900">{title}</h1>
+
+          <p className="mt-3 max-w-2xl leading-7 text-slate-600">
+            {description}
+          </p>
+
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Coming soon
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              This page is connected to navigation. Its complete functionality
+              can be implemented next.
+            </p>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
+  );
+}
+
+function SidebarPage({ children }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  return (
+    <>
+      <DashboardSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+      <main className="min-h-screen bg-slate-50 p-6 lg:ml-60">
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open navigation menu"
+          className="mb-6 rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 lg:hidden"
+        >
+          <Menu size={21} aria-hidden="true" />
+        </button>
+        {children}
+      </main>
+    </>
   );
 }
 
@@ -178,9 +220,30 @@ function AppRoutes() {
         }
       />
 
-      <Route path="/notifications" element={<Notifications />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/settings" element={<Settings />} />
+      <Route
+        path="/notifications"
+        element={
+          <SidebarPage>
+            <Notifications />
+          </SidebarPage>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <SidebarPage>
+            <Profile />
+          </SidebarPage>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <SidebarPage>
+            <Settings />
+          </SidebarPage>
+        }
+      />
 
       {/* Keep the 404 route last */}
       <Route path="*" element={<NotFound />} />

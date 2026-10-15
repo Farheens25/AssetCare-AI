@@ -260,7 +260,7 @@ function MaintenanceCalendar() {
           MAIN CONTENT
       ===================================== */}
 
-      <div className="lg:ml-72">
+      <div className="lg:ml-60">
 
         {/* =====================================
             TOP NAVBAR
@@ -275,7 +275,8 @@ function MaintenanceCalendar() {
             onClick={() =>
               setSidebarOpen(true)
             }
-            className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
+            aria-label="Open navigation menu"
+            className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 lg:hidden"
           >
             ☰
           </button>

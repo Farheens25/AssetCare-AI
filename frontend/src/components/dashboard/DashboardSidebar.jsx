@@ -1,91 +1,95 @@
-import { Link, useLocation } from "react-router-dom";
+import { NavLink, Link, useLocation } from "react-router-dom";
 import {
-  FiHome,
-  FiPackage,
-  FiPlusCircle,
-  FiCpu,
-  FiActivity,
-  FiTrendingUp,
-  FiTool,
-  FiCalendar,
-  FiBell,
-  FiGrid,
-  FiFileText,
-  FiShield,
-  FiAlertTriangle,
-  FiBarChart2,
-  FiShoppingBag,
-  FiUsers,
-  FiBriefcase,
-  FiHelpCircle,
-  FiSettings,
-  FiX,
-} from "react-icons/fi";
+  Archive,
+  Bell,
+  BriefcaseBusiness,
+  Calendar,
+  CalendarDays,
+  ChartNoAxesColumn,
+  CircleHelp,
+  CirclePlus,
+  FileText,
+  Heart,
+  House,
+  Leaf,
+  LayoutDashboard,
+  MessageCircle,
+  Package,
+  Search,
+  Settings,
+  Shield,
+  ShoppingBag,
+  Users,
+  Wrench,
+  X,
+} from "lucide-react";
 
 const sections = [
   {
     title: "Overview",
     items: [
-      { label: "Dashboard", path: "/dashboard", icon: FiHome },
-      { label: "My Products", path: "/products", icon: FiPackage },
-      { label: "Add Product", path: "/add-asset", icon: FiPlusCircle },
-      
+      { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+      { label: "My Assets", path: "/products", icon: Package },
+      { label: "Add Asset", path: "/add-asset", icon: CirclePlus },
     ],
   },
   {
     title: "Intelligence",
     items: [
-      { label: "AI Assistant", path: "/ai-assistant", icon: FiCpu },
-      { label: "Product Health", path: "/health", icon: FiActivity },
-      { label: "Predictive Care", path: "/predictive-care", icon: FiTrendingUp },
-      { label: "Repair vs Replace", path: "/repair-vs-replace", icon: FiTool },
+      { label: "AI Assistant", path: "/ai-assistant", icon: MessageCircle },
+      { label: "Product Health", path: "/health", icon: Heart },
+      { label: "Predictive Care", path: "/predictive-care", icon: Wrench },
+      {
+        label: "Repair vs Replace",
+        path: "/repair-vs-replace",
+        icon: ChartNoAxesColumn,
+      },
     ],
   },
   {
     title: "Care",
     items: [
-      { label: "Service History", path: "/service-history", icon: FiTool },
-      { label: "Book Service", path: "/book-service", icon: FiCalendar },
-      { label: "Smart Reminders", path: "/reminders", icon: FiBell },
-      { label: "Calendar", path: "/calendar", icon: FiCalendar },
+      { label: "Service History", path: "/service-history", icon: Wrench },
+      { label: "Book Service", path: "/book-service", icon: CalendarDays },
+      {
+        label: "Smart Reminders",
+        path: "/reminders",
+        activePaths: ["/smart-reminders"],
+        icon: Bell,
+      },
+      { label: "Calendar", path: "/calendar", icon: Calendar },
     ],
   },
   {
     title: "Assets",
     items: [
-      { label: "Home Assets", path: "/home-assets", icon: FiGrid },
-      { label: "Document Vault", path: "/document-vault", icon: FiFileText },
-      { label: "Insurance", path: "/insurance", icon: FiShield },
-      { label: "Recalls", path: "/recalls", icon: FiAlertTriangle },
+      { label: "Home Assets", path: "/home-assets", icon: House },
+      { label: "Document Vault", path: "/document-vault", icon: FileText },
+      { label: "Insurance", path: "/insurance", icon: Shield },
+      { label: "Recalls", path: "/recalls", icon: Search },
     ],
   },
   {
     title: "Value",
     items: [
-      { label: "Analytics", path: "/analytics", icon: FiBarChart2 },
-      { label: "Resale Center", path: "/resale", icon: FiTrendingUp },
-      { label: "Smart Shopping", path: "/shopping", icon: FiShoppingBag },
-      { label: "Energy & Eco", path: "/energy-eco", icon: FiBarChart2 },
+      { label: "Analytics", path: "/analytics", icon: ChartNoAxesColumn },
+      { label: "Resale Center", path: "/resale", icon: Archive },
+      { label: "Smart Shopping", path: "/shopping", icon: ShoppingBag },
+      { label: "Energy & Eco", path: "/energy-eco", icon: Leaf },
     ],
   },
   {
     title: "Workspace",
     items: [
-      { label: "Family Mode", path: "/family", icon: FiUsers },
-      { label: "Business", path: "/business", icon: FiBriefcase },
-      { label: "Support", path: "/support", icon: FiHelpCircle },
-      { label: "Admin Panel", path: "/admin", icon: FiShield },
-      { label: "Notifications", path: "/notifications", icon: FiBell },
-      { label: "Profile", path: "/profile", icon: FiUsers },
-      { label: "Settings", path: "/settings", icon: FiSettings },
+      { label: "Family Mode", path: "/family", icon: Users },
+      { label: "Business", path: "/business", icon: BriefcaseBusiness },
+      { label: "Support", path: "/support", icon: CircleHelp },
+      { label: "Settings", path: "/settings", icon: Settings },
     ],
   },
 ];
 
-export default function DashboardSidebar({
-  open = true,
-  onClose = () => {},
-}) {
+export default function DashboardSidebar({ open = false, onClose = () => {} }) {
   const location = useLocation();
 
   return (
@@ -100,7 +104,8 @@ export default function DashboardSidebar({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-72 flex-col border-r border-slate-200 bg-white transition-transform duration-300 ${
+        aria-label="Primary navigation"
+        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-60 flex-col border-r border-slate-200 bg-white transition-transform duration-200 ease-out ${
           open ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0`}
       >
@@ -109,79 +114,77 @@ export default function DashboardSidebar({
             <Link
               to="/dashboard"
               onClick={onClose}
-              className="flex items-center gap-3"
+              className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-500 text-xl font-bold text-white">
-                <FiShield />
-              </div>
-              <div>
-                <h2 className="text-lg font-extrabold tracking-tight text-slate-900">
-                  AssetCare<span className="text-sky-500">AI</span>
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Smart Asset Management
-                </p>
-              </div>
+              <span className="text-lg font-bold tracking-tight text-slate-900">
+                AssetCare<span className="text-blue-600">-AI</span>
+              </span>
             </Link>
 
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close sidebar"
-              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+              aria-label="Close navigation menu"
+              className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 lg:hidden"
             >
-              <FiX size={20} />
+              <X size={19} aria-hidden="true" />
             </button>
           </div>
         </div>
 
-        <nav className="min-h-0 flex-1 space-y-5 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-5">
+        <nav
+          aria-label="Main navigation"
+          className="min-h-0 flex-1 space-y-5 overflow-x-hidden overflow-y-auto overscroll-contain px-3 py-5"
+        >
           {sections.map((section) => (
-            <section key={section.title}>
-              <h3 className="mb-2 px-3 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
+            <section key={section.title} aria-labelledby={`sidebar-${section.title}`}>
+              <h2
+                id={`sidebar-${section.title}`}
+                className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400"
+              >
                 {section.title}
-              </h3>
+              </h2>
 
-              <div className="space-y-1">
-                {section.items.map(({ label, path, icon: Icon }) => {
-                  const active =
-                    location.pathname === path ||
-                    location.pathname.startsWith(`${path}/`);
-
-                  return (
-                    <Link
+              <div className="space-y-0.5">
+                {section.items.map(
+                  ({ label, path, activePaths = [], icon: Icon }) => (
+                    <NavLink
                       key={path}
                       to={path}
                       onClick={onClose}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${
-                        active
-                          ? "bg-sky-50 font-semibold text-sky-700"
-                          : "font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-950"
-                      }`}
+                      className={({ isActive }) =>
+                        `flex min-h-9 items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-blue-600 ${
+                          isActive || activePaths.includes(location.pathname)
+                            ? "bg-blue-50 font-semibold text-blue-700"
+                            : "font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                        }`
+                      }
                     >
-                      <Icon size={18} className="shrink-0" />
-                      <span>{label}</span>
-                      {active && (
-                        <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" />
-                      )}
-                    </Link>
-                  );
-                })}
+                      {({ isActive }) => {
+                        const active =
+                          isActive || activePaths.includes(location.pathname);
+
+                        return (
+                          <>
+                            <Icon
+                              size={17}
+                              strokeWidth={1.8}
+                              aria-hidden="true"
+                              className={`shrink-0 ${
+                                active ? "text-blue-600" : "text-slate-400"
+                              }`}
+                            />
+                            <span>{label}</span>
+                          </>
+                        );
+                      }}
+                    </NavLink>
+                  ),
+                )}
               </div>
             </section>
           ))}
         </nav>
-
-        <div className="shrink-0 border-t border-slate-100 p-4">
-          <div className="rounded-xl bg-slate-50 p-3">
-            <p className="text-sm font-semibold text-slate-800">
-              Your assets, organized
-            </p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              Manage products, warranties and services in one place.
-            </p>
-          </div>
-        </div>
       </aside>
     </>
   );

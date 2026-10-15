@@ -258,7 +258,7 @@ function EnergyEco() {
         onClose={() => setSidebarOpen(false)}
       />
 
-      <main className="min-h-screen lg:pl-72">
+      <main className="min-h-screen lg:pl-60">
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/95 px-5 backdrop-blur sm:px-8">
           <button
             type="button"

@@ -407,7 +407,7 @@ export default function BookService() {
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="min-h-screen lg:pl-72">
+      <div className="min-h-screen lg:pl-60">
         <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
           <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
             <button

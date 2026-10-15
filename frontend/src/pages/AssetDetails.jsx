@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { Menu } from "lucide-react";
 import {
   FiArrowLeft,
   FiCalendar,
@@ -21,6 +22,7 @@ function AssetDetails() {
   const [photoUrl, setPhotoUrl] = useState("");
   const [documentUrl, setDocumentUrl] = useState("");
   const [documentError, setDocumentError] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,24 +124,49 @@ function AssetDetails() {
         });
   };
 
+  const sidebar = (
+    <DashboardSidebar
+      open={sidebarOpen}
+      onClose={() => setSidebarOpen(false)}
+    />
+  );
+  const mobileMenuButton = (
+    <button
+      type="button"
+      onClick={() => setSidebarOpen(true)}
+      aria-label="Open navigation menu"
+      className="rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 lg:hidden"
+    >
+      <Menu size={21} aria-hidden="true" />
+    </button>
+  );
+
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50 p-8 lg:pl-80">
-        Loading your asset details...
-      </main>
+      <>
+        {sidebar}
+        <main className="min-h-screen bg-slate-50 p-8 lg:pl-60">
+          {mobileMenuButton}
+          <p>Loading your asset details...</p>
+        </main>
+      </>
     );
   }
 
   if (error || !asset) {
     return (
-      <main className="min-h-screen bg-slate-50 p-8 lg:pl-80">
-        <p className="text-red-600">
-          {error || "Asset not found or you do not have access to it."}
-        </p>
-        <Link to="/products" className="mt-4 inline-block text-blue-600">
-          Back to My Assets
-        </Link>
-      </main>
+      <>
+        {sidebar}
+        <main className="min-h-screen bg-slate-50 p-8 lg:pl-60">
+          {mobileMenuButton}
+          <p className="text-red-600">
+            {error || "Asset not found or you do not have access to it."}
+          </p>
+          <Link to="/products" className="mt-4 inline-block text-blue-600">
+            Back to My Assets
+          </Link>
+        </main>
+      </>
     );
   }
 
@@ -170,15 +197,18 @@ function AssetDetails() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <DashboardSidebar />
+      {sidebar}
 
-      <main className="space-y-6 p-4 sm:p-8 lg:ml-72">
-        <Link
-          to="/products"
-          className="inline-flex items-center gap-2 text-sm font-medium text-blue-600"
-        >
-          <FiArrowLeft /> Back to My Assets
-        </Link>
+      <main className="space-y-6 p-4 sm:p-8 lg:ml-60">
+        <div className="flex items-center gap-3">
+          {mobileMenuButton}
+          <Link
+            to="/products"
+            className="inline-flex items-center gap-2 text-sm font-medium text-blue-600"
+          >
+            <FiArrowLeft /> Back to My Assets
+          </Link>
+        </div>
 
         <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
           <div className="grid gap-6 p-6 md:grid-cols-[220px_1fr] md:p-8">

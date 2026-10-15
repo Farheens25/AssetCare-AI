@@ -1,7 +1,9 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Menu } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import DashboardSidebar from "../components/dashboard/DashboardSidebar";
 import {
   FiActivity,
   FiAlertCircle,
@@ -81,6 +83,7 @@ function ProductHealth() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -173,14 +176,26 @@ function ProductHealth() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <DashboardSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur lg:ml-60">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open navigation menu"
+            className="rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 lg:hidden"
+          >
+            <Menu size={21} aria-hidden="true" />
+          </button>
           <Link
             to="/dashboard"
             className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600"
           >
             <FiArrowLeft />
-            Dashboard
+            <span className="hidden sm:inline">Dashboard</span>
           </Link>
 
           <div className="flex items-center gap-2 font-bold">
@@ -199,7 +214,7 @@ function ProductHealth() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:ml-60 lg:px-8">
         <div className="mb-8">
           <p className="text-sm font-semibold text-blue-600">
             INTELLIGENCE / PRODUCT HEALTH

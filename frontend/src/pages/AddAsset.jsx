@@ -762,7 +762,7 @@ function AddAsset() {
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="min-h-screen lg:ml-72">
+      <div className="min-h-screen lg:ml-60">
         {/* Header */}
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
           <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">

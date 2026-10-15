@@ -166,7 +166,7 @@ function AIAssistant() {
         onClose={() => setSidebarOpen(false)}
       />
 
-      <main className="min-h-screen lg:pl-72">
+      <main className="min-h-screen lg:pl-60">
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-8">
           <button
             type="button"

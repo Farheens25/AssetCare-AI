@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Menu } from "lucide-react";
 import {
   FiFileText,
   FiSearch,
@@ -19,6 +20,7 @@ function DocumentVault() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -137,9 +139,20 @@ if (!cancelled) setDocuments(savedDocuments);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <DashboardSidebar />
+      <DashboardSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      <main className="min-h-screen space-y-6 p-4 sm:p-8 lg:ml-72">
+      <main className="min-h-screen space-y-6 p-4 sm:p-8 lg:ml-60">
+        <button
+          type="button"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open navigation menu"
+          className="rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 lg:hidden"
+        >
+          <Menu size={21} aria-hidden="true" />
+        </button>
         <Link
           to="/dashboard"
           className="inline-flex items-center gap-2 text-sm font-medium text-blue-600"
