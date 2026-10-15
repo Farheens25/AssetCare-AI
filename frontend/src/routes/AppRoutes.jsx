@@ -1,3 +1,4 @@
+
 import Products from "../pages/Products";
 import EnergyEco from "../pages/EnergyEco";
 import { Routes, Route } from "react-router-dom";
@@ -20,6 +21,8 @@ import NotFound from "../pages/NotFound";
 import FamilyMode from "../pages/FamilyMode";
 import AssetDetails from "../pages/AssetDetails";
 import AIAssistant from "../pages/AIAssistant";
+import SmartReminders from "../pages/SmartReminders";
+
 function AppRoutes() {
   return (
     <Routes>
@@ -33,33 +36,29 @@ function AppRoutes() {
       <Route path="/home-assets" element={<HomeAsset />} />
       <Route path="/ai-assistant" element={<AIAssistant />} />
       <Route path="/products" element={<Products />} />
-    <Route path="/add-asset" element={<AddAsset />} />
+      <Route path="/add-asset" element={<AddAsset />} />
       <Route path="/onboarding" element={<Onboarding />} />
 
       {/* Product Health */}
       <Route path="/health" element={<ProductHealth />} />
 
       {/* Service Management */}
-      <Route
-        path="/service-history"
-        element={<ServiceHistory />}
-      />
-      <Route
-        path="/book-service"
-        element={<BookService />}
-      />
+      <Route path="/service-history" element={<ServiceHistory />} />
+      <Route path="/book-service" element={<BookService />} />
 
       {/* Other Pages */}
       <Route path="/document-vault" element={<DocumentVault />} />
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/settings" element={<Settings />} />
-<Route path="/energy-eco" element={<EnergyEco />} />
+      <Route path="/energy-eco" element={<EnergyEco />} />
+      <Route path="/calendar" element={<MaintenanceCalendar />} />
+      <Route path="/family" element={<FamilyMode />} />
+      <Route path="/smart-reminders" element={<SmartReminders />} />
+      <Route path="/products/:id" element={<AssetDetails />} />
+
       {/* 404 Page */}
       <Route path="*" element={<NotFound />} />
-      <Route path="/products/:id" element={<AssetDetails />} />
-      <Route path="/calendar" element={<MaintenanceCalendar />}/>
-      <Route path="/family" element={<FamilyMode />}/>
     </Routes>
   );
 }

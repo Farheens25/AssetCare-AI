@@ -112,7 +112,7 @@ const formatPrice = (amount) => {
 
             <Link
               to="/dashboard"
-              className="hidden text-lg font-bold text-slate-900 lg:block"
+              className="text-xl font-bold text-indigo-600"
             >
               AssetCare-AI
             </Link>
@@ -129,7 +129,7 @@ const formatPrice = (amount) => {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="text-sm text-slate-600 hover:text-red-600"
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50"
               >
                 <FiLogOut size={16} />
                 <span className="ml-1">Logout</span>
