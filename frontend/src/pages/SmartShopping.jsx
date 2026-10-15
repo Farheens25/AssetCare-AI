@@ -9,7 +9,9 @@ import {
   FiArrowRight,
   FiBell,
   FiCheck,
+  FiMenu,
 } from "react-icons/fi";
+import DashboardSidebar from "../components/dashboard/DashboardSidebar";
 import { supabase } from "../lib/supabase";
 
 const priceDrops = [
@@ -96,6 +98,7 @@ function SectionTitle({ icon: Icon, title, subtitle }) {
 }
 
 function SmartShopping() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [alerts, setAlerts] = useState([]);
   const [saved, setSaved] = useState([]);
@@ -105,7 +108,6 @@ function SmartShopping() {
   const [busyItem, setBusyItem] = useState("");
   const [notice, setNotice] = useState("");
 
-  // Load catalogue, saved products and price alerts from Supabase.
   useEffect(() => {
     async function loadShoppingData() {
       setLoading(true);
@@ -154,9 +156,9 @@ function SmartShopping() {
         setProducts(productRows || []);
 
         setSaved(
-          (savedRows || []).map(
-            (row) => row.shopping_products?.product_name
-          ).filter(Boolean)
+          (savedRows || [])
+            .map((row) => row.shopping_products?.product_name)
+            .filter(Boolean)
         );
 
         setAlerts(
@@ -200,7 +202,6 @@ function SmartShopping() {
   const getProductByName = (name) =>
     products.find((product) => product.product_name === name);
 
-  // Save or remove a product from the user's comparison list.
   const toggleSaved = async (name) => {
     if (busyItem) return;
 
@@ -234,12 +235,10 @@ function SmartShopping() {
         setSaved((current) => current.filter((item) => item !== name));
         setNotice("Product removed from your saved list.");
       } else {
-        const { error } = await supabase
-          .from("saved_products")
-          .insert({
-            user_id: user.id,
-            product_id: product.id,
-          });
+        const { error } = await supabase.from("saved_products").insert({
+          user_id: user.id,
+          product_id: product.id,
+        });
 
         if (error) throw error;
 
@@ -254,7 +253,6 @@ function SmartShopping() {
     }
   };
 
-  // Create a price alert with a target price, or remove an existing alert.
   const toggleAlert = async (item) => {
     if (busyItem) return;
 
@@ -376,287 +374,311 @@ function SmartShopping() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <p className="mb-2 text-sm font-medium text-blue-600">
-              Value / Smart Shopping
-            </p>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-              Smart Shopping
-            </h1>
-            <p className="mt-2 text-slate-500">
-              Price drops, replacements, extended warranties and accessories.
-            </p>
-          </div>
+    <div className="min-h-screen bg-slate-50">
+      <DashboardSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-            <FiBell size={18} />
-            <span>{alerts.length} alerts enabled</span>
-          </div>
+      <main className="min-h-screen lg:ml-72">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-slate-200 bg-white px-4 sm:px-6">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
+            aria-label="Open sidebar"
+          >
+            <FiMenu size={20} />
+          </button>
+
+          <span className="font-semibold text-slate-800">
+            AssetCare-AI
+          </span>
+          <span className="text-slate-400">/</span>
+          <span className="text-sm text-slate-600">Smart Shopping</span>
         </header>
 
-        {notice && (
-          <div
-            role="status"
-            className="mb-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800"
-          >
-            {notice}
-          </div>
-        )}
+        <div className="px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <header className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+              <div>
+                <p className="mb-2 text-sm font-medium text-blue-600">
+                  Value / Smart Shopping
+                </p>
+                <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+                  Smart Shopping
+                </h1>
+                <p className="mt-2 text-slate-500">
+                  Price drops, replacements, extended warranties and accessories.
+                </p>
+              </div>
 
-        {loading && (
-          <p className="mb-5 text-sm text-slate-500">
-            Loading your shopping data...
-          </p>
-        )}
+              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+                <FiBell size={18} />
+                <span>{alerts.length} alerts enabled</span>
+              </div>
+            </header>
 
-        <div className="mb-8">
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search products, warranties, accessories..."
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          />
-        </div>
+            {notice && (
+              <div
+                role="status"
+                className="mb-5 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800"
+              >
+                {notice}
+              </div>
+            )}
 
-        <section className="mb-10">
-          <SectionTitle
-            icon={FiTrendingDown}
-            title="Price Drop Alerts"
-            subtitle="Discover products and services at reduced prices."
-          />
+            {loading && (
+              <p className="mb-5 text-sm text-slate-500">
+                Loading your shopping data...
+              </p>
+            )}
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {filteredDrops.map((item) => {
-              const discount = Math.round(
-                ((item.oldPrice - item.price) / item.oldPrice) * 100
-              );
+            <div className="mb-8">
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search products, warranties, accessories..."
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
 
-              const isWatching = alerts.some(
-                (alert) => alert.productName === item.name
-              );
+            <section className="mb-10">
+              <SectionTitle
+                icon={FiTrendingDown}
+                title="Price Drop Alerts"
+                subtitle="Discover products and services at reduced prices."
+              />
 
-              const currentAlert = alerts.find(
-                (alert) => alert.productName === item.name
-              );
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {filteredDrops.map((item) => {
+                  const discount = Math.round(
+                    ((item.oldPrice - item.price) / item.oldPrice) * 100
+                  );
 
-              return (
-                <article
-                  key={item.name}
-                  className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:shadow-md"
-                >
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    <div className="rounded-xl bg-emerald-50 p-3 text-emerald-600">
-                      <FiTrendingDown size={22} />
+                  const currentAlert = alerts.find(
+                    (alert) => alert.productName === item.name
+                  );
+
+                  return (
+                    <article
+                      key={item.name}
+                      className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:shadow-md"
+                    >
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <div className="rounded-xl bg-emerald-50 p-3 text-emerald-600">
+                          <FiTrendingDown size={22} />
+                        </div>
+                        <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                          {discount}% OFF
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-slate-500">{item.category}</p>
+                      <h3 className="mt-1 min-h-12 font-semibold text-slate-900">
+                        {item.name}
+                      </h3>
+
+                      <div className="mt-4 flex items-center gap-2">
+                        <span className="text-xl font-bold text-slate-900">
+                          {money(item.price)}
+                        </span>
+                        <span className="text-sm text-slate-400 line-through">
+                          {money(item.oldPrice)}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-sm text-emerald-700">
+                        Save {money(item.oldPrice - item.price)}
+                      </p>
+
+                      {currentAlert && (
+                        <p className="mt-2 text-xs text-slate-500">
+                          Target: {money(currentAlert.targetPrice)}
+                        </p>
+                      )}
+
+                      <button
+                        type="button"
+                        disabled={busyItem === item.name}
+                        onClick={() => toggleAlert(item)}
+                        className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                          currentAlert
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-blue-600 text-white hover:bg-blue-700"
+                        }`}
+                      >
+                        {currentAlert ? <FiCheck /> : <FiBell />}
+                        {busyItem === item.name
+                          ? "Please wait..."
+                          : currentAlert
+                            ? "Alert Enabled"
+                            : "Track Price"}
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
+
+              {filteredDrops.length === 0 && (
+                <p className="rounded-xl bg-white p-5 text-sm text-slate-500">
+                  No matching price drop products found.
+                </p>
+              )}
+            </section>
+
+            <section className="mb-10">
+              <SectionTitle
+                icon={FiRefreshCw}
+                title="Replacement Suggestions"
+                subtitle="Explore alternatives for your existing home assets."
+              />
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                {filteredReplacements.map((item) => (
+                  <article
+                    key={item.oldProduct}
+                    className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6"
+                  >
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600">
+                        {item.oldProduct}
+                      </span>
+                      <FiArrowRight className="text-blue-600" />
+                      <span className="rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700">
+                        {item.name}
+                      </span>
                     </div>
-                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                      {discount}% OFF
-                    </span>
-                  </div>
 
-                  <p className="text-xs text-slate-500">{item.category}</p>
-                  <h3 className="mt-1 min-h-12 font-semibold text-slate-900">
-                    {item.name}
-                  </h3>
-
-                  <div className="mt-4 flex items-center gap-2">
-                    <span className="text-xl font-bold text-slate-900">
+                    <p className="mt-5 text-2xl font-bold text-slate-900">
                       {money(item.price)}
-                    </span>
-                    <span className="text-sm text-slate-400 line-through">
-                      {money(item.oldPrice)}
-                    </span>
-                  </div>
-
-                  <p className="mt-2 text-sm text-emerald-700">
-                    Save {money(item.oldPrice - item.price)}
-                  </p>
-
-                  {currentAlert && (
-                    <p className="mt-2 text-xs text-slate-500">
-                      Target: {money(currentAlert.targetPrice)}
                     </p>
-                  )}
+                    <p className="mt-2 text-sm text-slate-500">
+                      {item.detail}
+                    </p>
 
+                    <button
+                      type="button"
+                      disabled={busyItem === item.name}
+                      onClick={() => toggleSaved(item.name)}
+                      className="mt-5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                    >
+                      {busyItem === item.name
+                        ? "Please wait..."
+                        : saved.includes(item.name)
+                          ? "Saved for comparison ✓"
+                          : "Save for comparison"}
+                    </button>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <section className="mb-10">
+              <SectionTitle
+                icon={FiShield}
+                title="Extended Warranty Offers"
+                subtitle="Explore additional coverage for your appliances."
+              />
+
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {filteredWarranties.map((item) => (
+                  <article
+                    key={item.name}
+                    className="rounded-2xl border border-slate-200 bg-white p-5"
+                  >
+                    <div className="mb-4 flex items-center justify-between">
+                      <FiShield size={24} className="text-blue-600" />
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                        {item.duration}
+                      </span>
+                    </div>
+
+                    <h3 className="font-semibold text-slate-900">{item.name}</h3>
+                    <p className="mt-3 text-2xl font-bold text-slate-900">
+                      {money(item.price)}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Illustrative offer price
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <section className="mb-10">
+              <SectionTitle
+                icon={FiPackage}
+                title="Recommended Accessories"
+                subtitle="Useful accessories for your household products."
+              />
+
+              <div className="mb-5 flex flex-wrap gap-2">
+                {[
+                  "All",
+                  ...new Set(accessories.map((item) => item.category)),
+                ].map((category) => (
                   <button
+                    key={category}
                     type="button"
-                    disabled={busyItem === item.name}
-                    onClick={() => toggleAlert(item)}
-                    className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                      isWatching
-                        ? "bg-emerald-50 text-emerald-700"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
+                    onClick={() => setSelectedCategory(category)}
+                    className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                      selectedCategory === category
+                        ? "bg-blue-600 text-white"
+                        : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
                     }`}
                   >
-                    {isWatching ? <FiCheck /> : <FiBell />}
-                    {busyItem === item.name
-                      ? "Please wait..."
-                      : isWatching
-                        ? "Alert Enabled"
-                        : "Track Price"}
+                    {category}
                   </button>
-                </article>
-              );
-            })}
-          </div>
+                ))}
+              </div>
 
-          {filteredDrops.length === 0 && (
-            <p className="rounded-xl bg-white p-5 text-sm text-slate-500">
-              No matching price drop products found.
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {filteredAccessories.map((item) => (
+                  <article
+                    key={item.name}
+                    className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:shadow-md"
+                  >
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-3xl">
+                      {item.icon}
+                    </div>
+
+                    <p className="text-xs text-slate-500">{item.category}</p>
+                    <h3 className="mt-1 font-semibold text-slate-900">
+                      {item.name}
+                    </h3>
+                    <p className="mt-3 text-lg font-bold text-slate-900">
+                      {money(item.price)}
+                    </p>
+
+                    <button
+                      type="button"
+                      disabled={busyItem === item.name}
+                      onClick={() => toggleSaved(item.name)}
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                    >
+                      <FiShoppingBag size={16} />
+                      {busyItem === item.name
+                        ? "Please wait..."
+                        : saved.includes(item.name)
+                          ? "Saved ✓"
+                          : "Save accessory"}
+                    </button>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <p className="border-t border-slate-200 py-5 text-xs text-slate-500">
+              Demo catalogue: prices, discounts, reliability scores and warranty
+              offers are sample data. Price targets are stored in Supabase, but
+              automatic live price monitoring and notifications require a live
+              pricing source and a scheduled backend service.
             </p>
-          )}
-        </section>
-
-        <section className="mb-10">
-          <SectionTitle
-            icon={FiRefreshCw}
-            title="Replacement Suggestions"
-            subtitle="Explore alternatives for your existing home assets."
-          />
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            {filteredReplacements.map((item) => (
-              <article
-                key={item.oldProduct}
-                className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6"
-              >
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600">
-                    {item.oldProduct}
-                  </span>
-                  <FiArrowRight className="text-blue-600" />
-                  <span className="rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700">
-                    {item.name}
-                  </span>
-                </div>
-
-                <p className="mt-5 text-2xl font-bold text-slate-900">
-                  {money(item.price)}
-                </p>
-                <p className="mt-2 text-sm text-slate-500">{item.detail}</p>
-
-                <button
-                  type="button"
-                  disabled={busyItem === item.name}
-                  onClick={() => toggleSaved(item.name)}
-                  className="mt-5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-                >
-                  {busyItem === item.name
-                    ? "Please wait..."
-                    : saved.includes(item.name)
-                      ? "Saved for comparison ✓"
-                      : "Save for comparison"}
-                </button>
-              </article>
-            ))}
           </div>
-        </section>
-
-        <section className="mb-10">
-          <SectionTitle
-            icon={FiShield}
-            title="Extended Warranty Offers"
-            subtitle="Explore additional coverage for your appliances."
-          />
-
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {filteredWarranties.map((item) => (
-              <article
-                key={item.name}
-                className="rounded-2xl border border-slate-200 bg-white p-5"
-              >
-                <div className="mb-4 flex items-center justify-between">
-                  <FiShield size={24} className="text-blue-600" />
-                  <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                    {item.duration}
-                  </span>
-                </div>
-
-                <h3 className="font-semibold text-slate-900">{item.name}</h3>
-                <p className="mt-3 text-2xl font-bold text-slate-900">
-                  {money(item.price)}
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Illustrative offer price
-                </p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="mb-10">
-          <SectionTitle
-            icon={FiPackage}
-            title="Recommended Accessories"
-            subtitle="Useful accessories for your household products."
-          />
-
-          <div className="mb-5 flex flex-wrap gap-2">
-            {[
-              "All",
-              ...new Set(accessories.map((item) => item.category)),
-            ].map((category) => (
-              <button
-                key={category}
-                type="button"
-                onClick={() => setSelectedCategory(category)}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                  selectedCategory === category
-                    ? "bg-blue-600 text-white"
-                    : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {filteredAccessories.map((item) => (
-              <article
-                key={item.name}
-                className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:shadow-md"
-              >
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-3xl">
-                  {item.icon}
-                </div>
-
-                <p className="text-xs text-slate-500">{item.category}</p>
-                <h3 className="mt-1 font-semibold text-slate-900">
-                  {item.name}
-                </h3>
-                <p className="mt-3 text-lg font-bold text-slate-900">
-                  {money(item.price)}
-                </p>
-
-                <button
-                  type="button"
-                  disabled={busyItem === item.name}
-                  onClick={() => toggleSaved(item.name)}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-                >
-                  <FiShoppingBag size={16} />
-                  {busyItem === item.name
-                    ? "Please wait..."
-                    : saved.includes(item.name)
-                      ? "Saved ✓"
-                      : "Save accessory"}
-                </button>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <p className="border-t border-slate-200 py-5 text-xs text-slate-500">
-          Demo catalogue: prices, discounts, reliability scores and warranty
-          offers are sample data. Price targets are stored in Supabase, but
-          automatic live price monitoring and notifications require a live
-          pricing source and a scheduled backend service.
-        </p>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

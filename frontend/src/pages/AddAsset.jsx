@@ -1,5 +1,6 @@
+
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -11,8 +12,10 @@ import {
   FiHash,
   FiImage,
   FiEdit3,
+  FiMenu,
 } from "react-icons/fi";
 import { supabase } from "../lib/supabase";
+import DashboardSidebar from "../components/dashboard/DashboardSidebar";
 
 const BARCODE_FORMATS = [
   Html5QrcodeSupportedFormats.EAN_13,
@@ -27,6 +30,8 @@ const BARCODE_FORMATS = [
 
 function AddAsset() {
   const navigate = useNavigate();
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     product_name: "",
@@ -45,7 +50,6 @@ function AddAsset() {
   });
 
   const [error, setError] = useState("");
-  const qrScannerRef = useRef(null);
   const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
   const [activeMethod, setActiveMethod] = useState("manual");
@@ -63,9 +67,35 @@ function AddAsset() {
   const [lookingUpBarcode, setLookingUpBarcode] = useState(false);
   const [scannedBill, setScannedBill] = useState(null);
 
+  const qrScannerRef = useRef(null);
+  const barcodeScannerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      const scanners = [
+        qrScannerRef.current,
+        barcodeScannerRef.current,
+      ];
+
+      scanners.forEach((scanner) => {
+        if (scanner) {
+          try {
+            if (scanner.isScanning) {
+              scanner.stop().catch((err) =>
+                console.error("Scanner cleanup error:", err),
+              );
+            }
+          } catch (err) {
+            console.error("Scanner cleanup error:", err);
+          }
+        }
+      });
+    };
+  }, []);
+
   const handleWarrantyExtraction = async (file) => {
     if (!file) {
-      setExtractionMessage("Please select a warranty-card image.");
+      setExtractionMessage("Please select an image first.");
       return;
     }
 
@@ -84,23 +114,18 @@ function AddAsset() {
       } = await supabase.auth.getSession();
 
       if (sessionError) throw sessionError;
-
-      if (!session) {
-        throw new Error("Please log in again.");
-      }
+      if (!session) throw new Error("Please log in again.");
 
       const imageBase64 = await new Promise((resolve, reject) => {
         const reader = new FileReader();
 
         reader.onload = () => {
-          const result = reader.result;
-
-          if (typeof result !== "string") {
+          if (typeof reader.result !== "string") {
             reject(new Error("Could not read the image."));
             return;
           }
 
-          resolve(result.split(",")[1]);
+          resolve(reader.result.split(",")[1]);
         };
 
         reader.onerror = () => reject(new Error("Could not read the image."));
@@ -124,52 +149,36 @@ function AddAsset() {
 
         if (!extractionError) break;
 
-        let detailedMessage = extractionError.message;
+        let message = extractionError.message;
 
         if (extractionError.context) {
           try {
             const response = await extractionError.context.clone().json();
-
-            console.error("Edge Function response:", response);
-
-            detailedMessage =
-              response.details || response.error || extractionError.message;
-          } catch (detailsError) {
-            console.error("Could not read error response:", detailsError);
+            message = response.details || response.error || message;
+          } catch {
+            // Use the original error message if response details are unavailable.
           }
         }
 
-        const isTemporaryCapacityError =
-          /high demand|overload|rate.?limit|\b429\b|\b503\b/i.test(
-            detailedMessage,
-          );
+        const temporaryError =
+          /high demand|overload|rate.?limit|\b429\b|\b503\b/i.test(message);
 
-        if (!isTemporaryCapacityError || attempt === 2) {
-          console.error("AI extraction error:", extractionError);
-          setExtractionMessage(
-            `AI extraction failed: ${detailedMessage}${
-              isTemporaryCapacityError
-                ? " Please wait a moment and try again."
-                : ""
-            }`,
+        if (!temporaryError || attempt === 2) {
+          throw new Error(
+            `${message}${temporaryError ? " Please try again later." : ""}`,
           );
-          return;
         }
 
-        setExtractionMessage(
-          `AI service is busy. Retrying (${attempt + 1}/2)...`,
-        );
+        setExtractionMessage("AI service is busy. Retrying...");
         await new Promise((resolve) =>
           setTimeout(resolve, 1500 * (attempt + 1)),
         );
       }
 
-      if (extractionError) {
-        throw extractionError;
-      }
+      if (extractionError) throw extractionError;
 
       if (!data?.success || !data?.extracted) {
-        throw new Error(data?.error || "Could not extract warranty details.");
+        throw new Error(data?.error || "Could not extract product details.");
       }
 
       const extracted = data.extracted;
@@ -204,13 +213,11 @@ function AddAsset() {
       });
 
       setExtractionMessage(
-        "Details extracted! Please review them before saving.",
+        "Details extracted! Review them before saving.",
       );
-    } catch (error) {
-      console.error("Warranty extraction error:", error);
-      setExtractionMessage(
-        error.message || "Could not analyze the warranty card.",
-      );
+    } catch (err) {
+      console.error("AI extraction error:", err);
+      setExtractionMessage(err.message || "Could not analyze the image.");
     } finally {
       setExtracting(false);
     }
@@ -229,6 +236,7 @@ function AddAsset() {
     if (/vehicle|car|motorcycle|bicycle|automotive/.test(details)) {
       return "Vehicles";
     }
+
     if (
       /washing machine|refrigerator|dishwasher|air conditioner|microwave|household appliance/.test(
         details,
@@ -236,6 +244,7 @@ function AddAsset() {
     ) {
       return "Appliances";
     }
+
     if (
       /electronics|computer|laptop|mobile phone|smartphone|tablet|television|camera|headphone/.test(
         details,
@@ -243,16 +252,15 @@ function AddAsset() {
     ) {
       return "Personal electronics";
     }
+
     if (/business|industrial|office equipment/.test(details)) {
       return "Business assets";
     }
-    if (
-      /household|furniture|kitchen|cleaning product|home appliance/.test(
-        details,
-      )
-    ) {
+
+    if (/household|furniture|kitchen|cleaning product|home appliance/.test(details)) {
       return "Home & household products";
     }
+
     if (/food|beverage|snack|noodle|cereal/.test(details)) {
       return "Other";
     }
@@ -261,8 +269,9 @@ function AddAsset() {
   };
 
   const getCatalogBarcode = (barcode) => {
-    const gs1Match = barcode.trim().match(/^(?:\]C1)?01(\d{14})$/);
-    const catalogBarcode = gs1Match?.[1] || barcode.trim();
+    const value = barcode.trim();
+    const gs1Match = value.match(/^(?:\]C1)?01(\d{14})$/);
+    const catalogBarcode = gs1Match?.[1] || value;
 
     return /^\d+$/.test(catalogBarcode) &&
       [8, 12, 13, 14].includes(catalogBarcode.length)
@@ -275,7 +284,7 @@ function AddAsset() {
 
     if (!catalogBarcode) {
       setBarcodeError(
-        `Scanned ${format} successfully, but this ${barcode.length}-character code is not a standard EAN/UPC/GTIN. Product lookup requires an 8, 12, 13, or 14-digit code.`,
+        `Scanned ${format}, but this is not a standard 8, 12, 13, or 14 digit product code.`,
       );
       return;
     }
@@ -287,6 +296,7 @@ function AddAsset() {
       const productUrl = new URL(
         `https://world.openfoodfacts.org/api/v3/product/${encodeURIComponent(catalogBarcode)}`,
       );
+
       productUrl.searchParams.set("product_type", "all");
       productUrl.searchParams.set(
         "fields",
@@ -294,26 +304,32 @@ function AddAsset() {
       );
 
       const response = await fetch(productUrl);
+
       if (response.status === 404) {
         setBarcodeError(
-          "Barcode read, but this product is not listed in the catalog. Enter the details manually.",
+          "Product not found in the catalog. Enter details manually.",
         );
         return;
       }
+
       if (!response.ok) {
-        throw new Error("The product catalog is temporarily unavailable.");
+        throw new Error("Product catalog is temporarily unavailable.");
       }
 
       const result = await response.json();
       const product = result.product;
+
       const productName =
-        product?.product_name?.trim() || product?.product_name_en?.trim() || "";
+        product?.product_name?.trim() ||
+        product?.product_name_en?.trim() ||
+        "";
+
       const brand = product?.brands?.split(",")[0]?.trim() || "";
       const category = product ? getBarcodeCategory(product) : "";
 
       if (!productName && !brand && !category) {
         setBarcodeError(
-          "Barcode read, but no product details were found in the catalog. Enter the details manually.",
+          "No product details found. Please enter details manually.",
         );
         return;
       }
@@ -326,17 +342,16 @@ function AddAsset() {
         ...(brand && !previous.brand.trim() ? { brand } : {}),
         ...(category && !previous.category ? { category } : {}),
       }));
+
       setBarcodeResult((previous) => ({
         ...previous,
         productName,
         brand,
       }));
-    } catch (error) {
-      console.error("Barcode product lookup error:", error);
+    } catch (err) {
+      console.error("Barcode lookup error:", err);
       setBarcodeError(
-        error instanceof TypeError
-          ? "Barcode read, but the catalog could not be reached. Check your connection or enter the details manually."
-          : `${error.message} Enter the details manually.`,
+        err.message || "Could not look up product. Enter details manually.",
       );
     } finally {
       setLookingUpBarcode(false);
@@ -344,10 +359,8 @@ function AddAsset() {
   };
 
   const handleDetectedBarcode = async (barcode, format) => {
-    const value = barcode.trim();
-
-    setBarcodeResult({ value, format });
-    await lookupBarcodeProduct(value, format);
+    setBarcodeResult({ value: barcode.trim(), format });
+    await lookupBarcodeProduct(barcode.trim(), format);
   };
 
   const scanBarcodeImage = async (file) => {
@@ -357,24 +370,31 @@ function AddAsset() {
     setBarcodeResult(null);
     setReadingBarcodeImage(true);
 
-    const scanner = new Html5Qrcode("barcode-reader", {
-      formatsToSupport: BARCODE_FORMATS,
-      useBarCodeDetectorIfSupported: true,
-    });
+    let scanner;
 
     try {
+      scanner = new Html5Qrcode("barcode-reader", {
+        formatsToSupport: BARCODE_FORMATS,
+        useBarCodeDetectorIfSupported: true,
+      });
+
       const result = await scanner.scanFileV2(file, false);
       const format =
         result.result.format?.formatName?.replaceAll("_", "-") || "Barcode";
 
       await handleDetectedBarcode(result.decodedText, format);
-    } catch (error) {
-      console.error("Barcode image scan error:", error);
+    } catch (err) {
+      console.error("Barcode image scan error:", err);
       setBarcodeError(
-        "No supported barcode was found in that photo. Use a clear, straight-on image or try the live scanner.",
+        "No supported barcode found. Try a clearer photo or use the camera scanner.",
       );
     } finally {
-      scanner.clear();
+      try {
+        scanner?.clear();
+      } catch {
+        // Ignore scanner cleanup errors.
+      }
+
       setReadingBarcodeImage(false);
     }
   };
@@ -384,43 +404,43 @@ function AddAsset() {
     setBarcodeResult(null);
 
     let scanner;
-    let hasDecodedBarcode = false;
+    let decoded = false;
 
     try {
       scanner = new Html5Qrcode("barcode-reader", {
         formatsToSupport: BARCODE_FORMATS,
         useBarCodeDetectorIfSupported: true,
       });
-      qrScannerRef.current = scanner;
+
+      barcodeScannerRef.current = scanner;
 
       await scanner.start(
         { facingMode: "environment" },
         {
           fps: 10,
-          qrbox: (viewfinderWidth, viewfinderHeight) => ({
-            width: Math.floor(viewfinderWidth * 0.9),
-            height: Math.min(
-              160,
-              Math.max(60, Math.floor(viewfinderHeight * 0.35)),
-            ),
+          qrbox: (width, height) => ({
+            width: Math.floor(width * 0.9),
+            height: Math.min(160, Math.max(60, Math.floor(height * 0.35))),
           }),
         },
         async (decodedText, result) => {
-          if (hasDecodedBarcode) return;
-          hasDecodedBarcode = true;
-
-          const format =
-            result.result.format?.formatName?.replaceAll("_", "-") || "Barcode";
+          if (decoded) return;
+          decoded = true;
 
           setScanningBarcode(false);
 
           try {
             await scanner.stop();
             scanner.clear();
-            if (qrScannerRef.current === scanner) qrScannerRef.current = null;
-          } catch (stopError) {
-            console.error("Could not stop barcode scanner:", stopError);
+          } catch (err) {
+            console.error("Barcode scanner stop error:", err);
           }
+
+          barcodeScannerRef.current = null;
+
+          const format =
+            result.result.format?.formatName?.replaceAll("_", "-") ||
+            "Barcode";
 
           await handleDetectedBarcode(decodedText, format);
         },
@@ -428,41 +448,151 @@ function AddAsset() {
       );
 
       setScanningBarcode(true);
-    } catch (error) {
-      console.error("Barcode scanner error:", error);
+    } catch (err) {
+      console.error("Barcode camera error:", err);
       setBarcodeError(
         "Could not start the camera. Allow camera access and try again.",
       );
+
       setScanningBarcode(false);
 
       try {
         if (scanner?.isScanning) await scanner.stop();
         scanner?.clear();
-      } catch (cleanupError) {
-        console.error("Could not clean up barcode scanner:", cleanupError);
+      } catch {
+        // Ignore cleanup errors.
       }
 
-      if (qrScannerRef.current === scanner) qrScannerRef.current = null;
+      barcodeScannerRef.current = null;
     }
   };
 
   const stopBarcodeScanner = async () => {
+    const scanner = barcodeScannerRef.current;
+
+    try {
+      if (scanner?.isScanning) await scanner.stop();
+      scanner?.clear();
+    } catch (err) {
+      console.error("Could not stop barcode scanner:", err);
+    } finally {
+      barcodeScannerRef.current = null;
+      setScanningBarcode(false);
+    }
+  };
+
+  const startQRScanner = async () => {
+    setQrResult("");
+    setQrError("");
+
+    let scanner;
+
+    try {
+      scanner = new Html5Qrcode("qr-reader");
+      qrScannerRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        async (decodedText) => {
+          setQrResult(decodedText);
+          setScanningQR(false);
+
+          try {
+            await scanner.stop();
+            scanner.clear();
+          } catch (err) {
+            console.error("QR scanner stop error:", err);
+          }
+
+          qrScannerRef.current = null;
+
+          try {
+            const product = JSON.parse(decodedText);
+
+            if (!product || typeof product !== "object" || Array.isArray(product)) {
+              throw new Error("Unsupported QR data");
+            }
+
+            setFormData((previous) => ({
+              ...previous,
+              product_name:
+                product.product_name ||
+                product.productName ||
+                previous.product_name,
+              brand: product.brand || previous.brand,
+              model: product.model || previous.model,
+              serial_number:
+                product.serial_number ||
+                product.serialNumber ||
+                previous.serial_number,
+              invoice_number:
+                product.invoice_number ||
+                product.invoiceNumber ||
+                previous.invoice_number,
+              purchase_date:
+                product.purchase_date ||
+                product.purchaseDate ||
+                previous.purchase_date,
+              warranty_months: String(
+                product.warranty_months ??
+                  product.warrantyMonths ??
+                  previous.warranty_months,
+              ),
+              warranty_expiry:
+                product.warranty_expiry ||
+                product.warrantyExpiry ||
+                previous.warranty_expiry,
+            }));
+
+            setQrError("Product details were read from the QR code.");
+          } catch {
+            setFormData((previous) => ({
+              ...previous,
+              serial_number: previous.serial_number || decodedText.trim(),
+            }));
+
+            setQrError(
+              "QR code scanned. Enter any remaining product details manually.",
+            );
+          }
+        },
+        () => {},
+      );
+
+      setScanningQR(true);
+    } catch (err) {
+      console.error("QR scanner error:", err);
+      setQrError("Could not start the camera. Allow camera access and retry.");
+      setScanningQR(false);
+
+      try {
+        if (scanner?.isScanning) await scanner.stop();
+        scanner?.clear();
+      } catch {
+        // Ignore cleanup errors.
+      }
+
+      qrScannerRef.current = null;
+    }
+  };
+
+  const stopQRScanner = async () => {
     const scanner = qrScannerRef.current;
 
     try {
       if (scanner?.isScanning) await scanner.stop();
       scanner?.clear();
-    } catch (error) {
-      console.error("Could not stop barcode scanner:", error);
-      setBarcodeError("Could not stop the camera cleanly. Please try again.");
+    } catch (err) {
+      console.error("Could not stop QR scanner:", err);
     } finally {
       qrScannerRef.current = null;
-      setScanningBarcode(false);
+      setScanningQR(false);
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const handleChange = (event) => {
+    const { name, value } = event.target;
 
     setFormData((previous) => ({
       ...previous,
@@ -470,53 +600,44 @@ function AddAsset() {
     }));
   };
 
-  const handleWarrantyChange = (e) => {
-    const months = e.target.value;
+  const calculateExpiry = (purchaseDate, months) => {
+    if (!purchaseDate || months === "" || Number(months) < 0) return "";
 
-    setFormData((previous) => {
-      let warrantyExpiry = "";
+    const date = new Date(`${purchaseDate}T12:00:00`);
+    date.setMonth(date.getMonth() + Number(months));
 
-      if (months && previous.purchase_date) {
-        const date = new Date(previous.purchase_date);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
 
-        date.setMonth(date.getMonth() + Number(months));
-
-        warrantyExpiry = date.toISOString().split("T")[0];
-      }
-
-      return {
-        ...previous,
-        warranty_months: months,
-        warranty_expiry: warrantyExpiry,
-      };
-    });
+    return `${year}-${month}-${day}`;
   };
 
-  const handlePurchaseDateChange = (e) => {
-    const purchaseDate = e.target.value;
+  const handleWarrantyChange = (event) => {
+    const months = event.target.value;
 
-    setFormData((previous) => {
-      let warrantyExpiry = "";
-
-      if (purchaseDate && previous.warranty_months) {
-        const date = new Date(purchaseDate);
-
-        date.setMonth(date.getMonth() + Number(previous.warranty_months));
-
-        warrantyExpiry = date.toISOString().split("T")[0];
-      }
-
-      return {
-        ...previous,
-        purchase_date: purchaseDate,
-        warranty_expiry: warrantyExpiry,
-      };
-    });
+    setFormData((previous) => ({
+      ...previous,
+      warranty_months: months,
+      warranty_expiry: calculateExpiry(previous.purchase_date, months),
+    }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handlePurchaseDateChange = (event) => {
+    const purchaseDate = event.target.value;
 
+    setFormData((previous) => ({
+      ...previous,
+      purchase_date: purchaseDate,
+      warranty_expiry: calculateExpiry(
+        purchaseDate,
+        previous.warranty_months,
+      ),
+    }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError("");
     setSuccess("");
 
@@ -533,14 +654,8 @@ function AddAsset() {
         error: userError,
       } = await supabase.auth.getUser();
 
-      if (userError) {
-        throw userError;
-      }
-
-      if (!user) {
-        setError("You must be logged in to add an asset.");
-        return;
-      }
+      if (userError) throw userError;
+      if (!user) throw new Error("You must be logged in to add an asset.");
 
       const { data: asset, error: insertError } = await supabase
         .from("assets")
@@ -569,63 +684,54 @@ function AddAsset() {
         .select("id")
         .single();
 
-      if (insertError) {
-        throw insertError;
-      }
-      // Upload product photo
+      if (insertError) throw insertError;
+
       let productPhotoPath = null;
       let invoiceFilePath = null;
 
       if (productPhoto) {
-        const photoExt = productPhoto.name.split(".").pop();
-        productPhotoPath = `${user.id}/${asset.id}.${photoExt}`;
+        const extension = productPhoto.name.split(".").pop();
+        productPhotoPath = `${user.id}/${asset.id}.${extension}`;
 
-        const { error: photoUploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from("asset-photos")
           .upload(productPhotoPath, productPhoto, {
             contentType: productPhoto.type,
           });
 
-        if (photoUploadError) {
-          throw photoUploadError;
-        }
+        if (uploadError) throw uploadError;
       }
 
-      // Upload invoice or warranty document
       if (invoiceDocument) {
-        const documentExt = invoiceDocument.name.split(".").pop();
-        invoiceFilePath = `${user.id}/${asset.id}-invoice.${documentExt}`;
+        const extension = invoiceDocument.name.split(".").pop();
+        invoiceFilePath = `${user.id}/${asset.id}-invoice.${extension}`;
 
-        const { error: documentUploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from("asset-documents")
           .upload(invoiceFilePath, invoiceDocument, {
             contentType: invoiceDocument.type,
           });
 
-        if (documentUploadError) {
-          throw documentUploadError;
-        }
+        if (uploadError) throw uploadError;
       }
 
-      // Save uploaded file paths in the assets table
       if (productPhotoPath || invoiceFilePath) {
-        const { error: pathUpdateError } = await supabase
+        const { error: updateError } = await supabase
           .from("assets")
           .update({
-            ...(productPhotoPath && {
-              product_photo_path: productPhotoPath,
-            }),
-            ...(invoiceFilePath && {
-              invoice_file_path: invoiceFilePath,
-            }),
+            ...(productPhotoPath
+              ? { product_photo_path: productPhotoPath }
+              : {}),
+            ...(invoiceFilePath
+              ? { invoice_file_path: invoiceFilePath }
+              : {}),
           })
           .eq("id", asset.id)
           .eq("user_id", user.id);
 
-        if (pathUpdateError) {
-          throw pathUpdateError;
-        }
+        if (updateError) throw updateError;
       }
+
       setSuccess("Product added successfully!");
 
       setTimeout(() => {
@@ -633,7 +739,6 @@ function AddAsset() {
       }, 1000);
     } catch (err) {
       console.error("Add asset error:", err);
-
       setError(err.message || "Something went wrong while saving the product.");
     } finally {
       setSaving(false);
@@ -644,7 +749,7 @@ function AddAsset() {
     "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10";
 
   const methodClass = (method) =>
-    `group flex cursor-pointer items-center gap-4 rounded-2xl border p-5 text-left transition ${
+    `flex items-center gap-4 rounded-2xl border p-5 text-left transition ${
       activeMethod === method
         ? "border-blue-300 bg-blue-50/50 shadow-sm"
         : "border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm"
@@ -652,905 +757,445 @@ function AddAsset() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link
-            to="/dashboard"
-            className="flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-blue-600"
-          >
-            <FiArrowLeft size={17} />
-            Back to Dashboard
-          </Link>
-
-          <div className="text-lg font-bold tracking-tight text-slate-900">
-            AssetCare-AI
-          </div>
-        </div>
-      </header>
-
-      {/* Main */}
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        {/* Heading */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <p className="text-sm font-semibold text-blue-600">
-            Asset management
-          </p>
-
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            Add a product
-          </h1>
-
-          <p className="mt-2 text-sm text-slate-500 sm:text-base">
-            Add your product manually now. Bill scanning, QR, barcode and photo
-            identification can be connected next.
-          </p>
-        </motion.div>
-
-        {/* Add methods */}
-        <motion.section
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3"
-        >
-          {/* Upload Bill */}
-          <button
-            type="button"
-            onClick={() => setActiveMethod("upload")}
-            className={methodClass("upload")}
-          >
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-              <FiFileText size={24} />
-            </div>
-
-            <div>
-              <h2 className="font-bold text-slate-900">Upload Bill</h2>
-
-              <p className="mt-1 text-sm text-slate-500">PDF, JPG, PNG</p>
-            </div>
-          </button>
-
-          {/* Scan Bill */}
-          <button
-            type="button"
-            onClick={() => setActiveMethod("scan")}
-            className={methodClass("scan")}
-          >
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-              <FiCamera size={24} />
-            </div>
-
-            <div>
-              <h2 className="font-bold text-slate-900">Scan Bill</h2>
-
-              <p className="mt-1 text-sm text-slate-500">Use camera OCR</p>
-            </div>
-          </button>
-
-          {/* Manual */}
-          <button
-            type="button"
-            onClick={() => setActiveMethod("manual")}
-            className={methodClass("manual")}
-          >
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-              <FiEdit3 size={24} />
-            </div>
-
-            <div>
-              <h2 className="font-bold text-slate-900">Manual Entry</h2>
-
-              <p className="mt-1 text-sm text-slate-500">Type it yourself</p>
-            </div>
-          </button>
-
-          {/* QR */}
-          <button
-            type="button"
-            onClick={() => setActiveMethod("qr")}
-            className={methodClass("qr")}
-          >
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-              <FiGrid size={24} />
-            </div>
-
-            <div>
-              <h2 className="font-bold text-slate-900">Scan QR Code</h2>
-
-              <p className="mt-1 text-sm text-slate-500">Warranty QR</p>
-            </div>
-          </button>
-
-          {/* Barcode */}
-          <button
-            type="button"
-            onClick={() => setActiveMethod("barcode")}
-            className={methodClass("barcode")}
-          >
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-              <FiHash size={24} />
-            </div>
-
-            <div>
-              <h2 className="font-bold text-slate-900">Scan Barcode</h2>
-
-              <p className="mt-1 text-sm text-slate-500">EAN / UPC</p>
-            </div>
-          </button>
-
-          {/* Product photo */}
-          <button
-            type="button"
-            onClick={() => setActiveMethod("photo")}
-            className={methodClass("photo")}
-          >
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-              <FiImage size={24} />
-            </div>
-
-            <div>
-              <h2 className="font-bold text-slate-900">Product Photo</h2>
-
-              <p className="mt-1 text-sm text-slate-500">Auto identify</p>
-            </div>
-          </button>
-        </motion.section>
-
-        {/* Notice */}
-        {["scan", "qr", "barcode"].includes(activeMethod) && (
-          <>
-            {activeMethod === "qr" ? (
-              <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
-                <h3 className="font-semibold text-blue-800">
-                  Scan Warranty QR Code
-                </h3>
-                <p className="mt-1 text-sm text-blue-700">
-                  Use your camera to scan the QR code on your product or
-                  warranty card.
-                </p>
-
-                <div
-                  id="qr-reader"
-                  ref={qrScannerRef}
-                  className="mt-4 w-full max-w-md"
-                />
-
-                {!scanningQR && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        setQrResult("");
-                        setQrError("");
-
-                        const scanner = new Html5Qrcode("qr-reader");
-                        qrScannerRef.current = scanner;
-                        await scanner.start(
-                          { facingMode: "environment" },
-                          { fps: 10, qrbox: { width: 250, height: 250 } },
-                          async (decodedText) => {
-                            setQrResult(decodedText);
-                            setScanningQR(false);
-
-                            const value = decodedText.trim();
-
-                            try {
-                              // Try to read structured JSON product details from the QR code.
-                              const product = JSON.parse(value);
-
-                              if (
-                                product &&
-                                typeof product === "object" &&
-                                !Array.isArray(product)
-                              ) {
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  product_name:
-                                    product.product_name ||
-                                    product.productName ||
-                                    prev.product_name,
-                                  brand: product.brand || prev.brand,
-                                  model: product.model || prev.model,
-                                  serial_number:
-                                    product.serial_number ||
-                                    product.serialNumber ||
-                                    prev.serial_number,
-                                  invoice_number:
-                                    product.invoice_number ||
-                                    product.invoiceNumber ||
-                                    prev.invoice_number,
-                                  purchase_date:
-                                    product.purchase_date ||
-                                    product.purchaseDate ||
-                                    prev.purchase_date,
-                                  warranty_months:
-                                    product.warranty_months ??
-                                    product.warrantyMonths ??
-                                    prev.warranty_months,
-                                  warranty_expiry:
-                                    product.warranty_expiry ||
-                                    product.warrantyExpiry ||
-                                    prev.warranty_expiry,
-                                }));
-                                setQrError(
-                                  "Product details were filled from the QR code.",
-                                );
-                              } else {
-                                setQrError(
-                                  "This QR code does not contain structured product details.",
-                                );
-                              }
-                            } catch {
-                              if (/^https?:\/\//i.test(value)) {
-                                setQrError(
-                                  "This QR code contains a website link. Automatic product lookup is not configured yet.",
-                                );
-                              } else {
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  serial_number: prev.serial_number || value,
-                                }));
-                                setQrError(
-                                  "Only a product identifier was found. Other details need to be entered manually.",
-                                );
-                              }
-                            }
-
-                            try {
-                              await scanner.stop();
-                              scanner.clear();
-                              qrScannerRef.current = null;
-                            } catch (stopError) {
-                              console.error(
-                                "Could not stop QR scanner:",
-                                stopError,
-                              );
-                            }
-                          },
-                          () => {},
-                        );
-
-                        setScanningQR(true);
-                      } catch (err) {
-                        setQrError(
-                          "Could not start the camera. Please allow camera access and try again.",
-                        );
-                        setScanningQR(false);
-                        console.error("QR scanner error:", err);
-                      }
-                    }}
-                    className="mt-4 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700"
-                  >
-                    Start QR Scanner
-                  </button>
-                )}
-
-                {qrResult && (
-                  <p className="mt-3 break-all text-sm text-green-700">
-                    Scanned result: {qrResult}
-                  </p>
-                )}
-
-                {qrError && (
-                  <p className="mt-3 text-sm text-red-600">{qrError}</p>
-                )}
-              </div>
-            ) : (
-              <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 text-sm text-blue-700">
-                <span className="font-semibold">
-                  {activeMethod === "scan" && "Scan Bill"}
-                  {activeMethod === "barcode" && "Scan Barcode"}
-                </span>{" "}
-                {activeMethod === "scan" ? (
-                  <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
-                    <h3 className="font-semibold text-blue-800">
-                      Scan Purchase Bill
-                    </h3>
-
-                    <p className="mt-1 text-sm text-blue-700">
-                      Take a clear photo of your bill to extract purchase and
-                      warranty details.
-                    </p>
-
-                    <input
-                      id="scan-bill-input"
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={(e) => {
-                        setScannedBill(e.target.files?.[0] || null);
-                        setExtractionMessage("");
-                      }}
-                      className="hidden"
-                    />
-
-                    <label
-                      htmlFor="scan-bill-input"
-                      className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-blue-700"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M14 4h6v6" />
-                        <path d="M20 4 12 12" />
-                        <path d="M20 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5" />
-                      </svg>
-                      Scan Bill
-                    </label>
-
-                    {scannedBill && (
-                      <>
-                        <p className="mt-3 text-sm text-slate-600">
-                          Selected: {scannedBill.name}
-                        </p>
-
-                        <button
-                          type="button"
-                          onClick={() => handleWarrantyExtraction(scannedBill)}
-                          disabled={extracting}
-                          className="mt-4 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                        >
-                          {extracting
-                            ? "Analyzing bill..."
-                            : "Extract Bill Details"}
-                        </button>
-                      </>
-                    )}
-
-                    {extractionMessage && (
-                      <p className="mt-3 text-sm text-slate-600">
-                        {extractionMessage}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
-                    <h3 className="font-semibold text-blue-800">
-                      Scan Barcode
-                    </h3>
-                    <p className="mt-1 text-sm text-blue-700">
-                      Center the barcode horizontally in the frame, or scan a
-                      clear barcode photo. A catalog match can fill the product
-                      name, brand, and category.
-                    </p>
-                    <div
-                      id="barcode-reader"
-                      className="mt-4 w-full max-w-md overflow-hidden rounded-xl"
-                    />
-                    {lookingUpBarcode || readingBarcodeImage ? (
-                      <button
-                        type="button"
-                        disabled
-                        className="mt-4 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white opacity-60"
-                      >
-                        {readingBarcodeImage
-                          ? "Reading barcode photo..."
-                          : "Looking up product details..."}
-                      </button>
-                    ) : scanningBarcode ? (
-                      <button
-                        type="button"
-                        onClick={stopBarcodeScanner}
-                        className="mt-4 rounded-xl border border-slate-300 bg-white px-5 py-3 font-medium text-slate-700 hover:bg-slate-50"
-                      >
-                        Stop Camera
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={startBarcodeScanner}
-                        className="mt-4 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700"
-                      >
-                        Start Barcode Scanner
-                      </button>
-                    )}
-                    <label className="mt-4 block text-sm font-medium text-slate-700">
-                      Scan from a photo
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        disabled={
-                          scanningBarcode ||
-                          readingBarcodeImage ||
-                          lookingUpBarcode
-                        }
-                        onChange={(event) => {
-                          const file = event.target.files?.[0];
-                          event.target.value = "";
-                          scanBarcodeImage(file);
-                        }}
-                        className="mt-2 block w-full text-sm font-normal text-slate-600 disabled:opacity-50"
-                      />
-                    </label>
-                    {barcodeResult && (
-                      <p
-                        className="mt-3 break-all text-sm text-green-700"
-                        aria-live="polite"
-                      >
-                        Scanned {barcodeResult.format}: {barcodeResult.value}
-                      </p>
-                    )}
-                    {(barcodeResult?.productName || barcodeResult?.brand) && (
-                      <p className="mt-2 text-sm text-green-700">
-                        Catalog match: {barcodeResult.productName}
-                        {barcodeResult.productName && barcodeResult.brand
-                          ? " | "
-                          : ""}
-                        {barcodeResult.brand}. Matching details were added to
-                        empty form fields.
-                      </p>
-                    )}
-                    {barcodeError && (
-                      <p className="mt-3 text-sm text-red-600" role="alert">
-                        {barcodeError}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Manual form */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/40 sm:p-8"
-        >
-          <div className="mb-7">
-            <h2 className="text-lg font-bold text-slate-900">
-              Or fill the details manually
-            </h2>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Enter the information from your bill or product.
-            </p>
-          </div>
-
-          {error && (
-            <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-600">
-              {success}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <div className="grid gap-x-5 gap-y-5 md:grid-cols-2 xl:grid-cols-3">
-              {/* Product name */}
-              <div className="md:col-span-2 xl:col-span-3">
-                <label
-                  htmlFor="product_name"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Product Name *
-                </label>
-
-                <input
-                  id="product_name"
-                  name="product_name"
-                  type="text"
-                  value={formData.product_name}
-                  onChange={handleChange}
-                  placeholder="Example: Samsung Washing Machine"
-                  className={inputClass}
-                />
-              </div>
-
-              {/* Brand */}
-              <div>
-                <label
-                  htmlFor="brand"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Brand
-                </label>
-
-                <input
-                  id="brand"
-                  name="brand"
-                  type="text"
-                  value={formData.brand}
-                  onChange={handleChange}
-                  placeholder="Brand"
-                  className={inputClass}
-                />
-              </div>
-
-              {/* Category */}
-              <div>
-                <label
-                  htmlFor="category"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Category
-                </label>
-
-                <select
-                  id="category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  className={inputClass}
-                >
-                  <option value="">Category</option>
-                  <option value="Home & household products">
-                    Home & household products
-                  </option>
-                  <option value="Personal electronics">
-                    Personal electronics
-                  </option>
-                  <option value="Vehicles">Vehicles</option>
-                  <option value="Appliances">Appliances</option>
-                  <option value="Business assets">Business assets</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              {/* Model */}
-              <div>
-                <label
-                  htmlFor="model"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Model
-                </label>
-
-                <input
-                  id="model"
-                  name="model"
-                  type="text"
-                  value={formData.model}
-                  onChange={handleChange}
-                  placeholder="Model"
-                  className={inputClass}
-                />
-              </div>
-
-              {/* Serial */}
-              <div>
-                <label
-                  htmlFor="serial_number"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Serial Number
-                </label>
-
-                <input
-                  id="serial_number"
-                  name="serial_number"
-                  type="text"
-                  value={formData.serial_number}
-                  onChange={handleChange}
-                  placeholder="Serial Number"
-                  className={inputClass}
-                />
-              </div>
-
-              {/* Product Photo Upload */}
-
-              {/* Product Photo Upload */}
-              {activeMethod === "photo" && (
-                <div className="md:col-span-2 xl:col-span-3">
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Product Photo
-                  </label>
-
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null;
-                      setProductPhoto(file);
-                    }}
-                    className={inputClass}
-                  />
-
-                  {productPhoto && (
-                    <div className="mt-4">
-                      <p className="mb-2 text-sm font-medium text-slate-700">
-                        Photo preview
-                      </p>
-
-                      <img
-                        src={URL.createObjectURL(productPhoto)}
-                        alt="Product preview"
-                        className="h-48 w-48 rounded-xl border border-slate-200 object-cover"
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => setProductPhoto(null)}
-                        className="mt-3 block text-sm font-medium text-red-600 hover:text-red-700"
-                      >
-                        Remove photo
-                      </button>
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => handleWarrantyExtraction(productPhoto)}
-                    disabled={extracting || !productPhoto}
-                    className="mt-4 rounded-xl bg-indigo-600 px-5 py-3 font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {extracting
-                      ? "Analyzing product photo..."
-                      : "Extract Details with AI"}
-                  </button>
-
-                  {extractionMessage && (
-                    <p className="mt-3 text-sm text-slate-600">
-                      {extractionMessage}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Invoice / Warranty Document — Manual Entry only */}
-              {/* Invoice / Warranty Document — Upload Bill mode only */}
-              {activeMethod === "upload" && (
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Invoice / Warranty Document
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) =>
-                      setInvoiceDocument(e.target.files[0] || null)
-                    }
-                    className={inputClass}
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => handleWarrantyExtraction(invoiceDocument)}
-                    disabled={
-                      extracting ||
-                      !invoiceDocument ||
-                      !["image/jpeg", "image/png", "image/webp"].includes(
-                        invoiceDocument?.type,
-                      )
-                    }
-                    className="mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-                  >
-                    {extracting
-                      ? "Analyzing warranty card..."
-                      : "Extract Details with AI"}
-                  </button>
-
-                  {extractionMessage && (
-                    <p className="mt-2 text-sm text-slate-600">
-                      {extractionMessage}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Invoice */}
-              <div>
-                <label
-                  htmlFor="invoice_number"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Invoice Number
-                </label>
-
-                <input
-                  id="invoice_number"
-                  name="invoice_number"
-                  type="text"
-                  value={formData.invoice_number}
-                  onChange={handleChange}
-                  placeholder="Invoice Number"
-                  className={inputClass}
-                />
-              </div>
-
-              {/* Purchase date */}
-              <div>
-                <label
-                  htmlFor="purchase_date"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Purchase Date
-                </label>
-
-                <input
-                  id="purchase_date"
-                  name="purchase_date"
-                  type="date"
-                  value={formData.purchase_date}
-                  onChange={handlePurchaseDateChange}
-                  className={inputClass}
-                />
-              </div>
-
-              {/* Warranty */}
-              <div>
-                <label
-                  htmlFor="warranty_months"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Warranty (months)
-                </label>
-
-                <input
-                  id="warranty_months"
-                  name="warranty_months"
-                  type="number"
-                  min="0"
-                  value={formData.warranty_months}
-                  onChange={handleWarrantyChange}
-                  placeholder="Warranty (months)"
-                  className={inputClass}
-                />
-
-                {formData.warranty_expiry && (
-                  <p className="mt-2 text-xs text-slate-500">
-                    Warranty expires on{" "}
-                    <span className="font-semibold text-slate-700">
-                      {new Date(formData.warranty_expiry).toLocaleDateString(
-                        "en-IN",
-                        {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        },
-                      )}
-                    </span>
-                  </p>
-                )}
-              </div>
-
-              {/* Store */}
-              <div>
-                <label
-                  htmlFor="store_name"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Store
-                </label>
-
-                <input
-                  id="store_name"
-                  name="store_name"
-                  type="text"
-                  value={formData.store_name}
-                  onChange={handleChange}
-                  placeholder="Store"
-                  className={inputClass}
-                />
-              </div>
-
-              {/* Price */}
-              <div>
-                <label
-                  htmlFor="purchase_price"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Price
-                </label>
-
-                <input
-                  id="purchase_price"
-                  name="purchase_price"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.purchase_price}
-                  onChange={handleChange}
-                  placeholder="Price"
-                  className={inputClass}
-                />
-              </div>
-
-              {/* Location */}
-              <div>
-                <label
-                  htmlFor="location_in_home"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Location in Home
-                </label>
-
-                <input
-                  id="location_in_home"
-                  name="location_in_home"
-                  type="text"
-                  value={formData.location_in_home}
-                  onChange={handleChange}
-                  placeholder="Example: Kitchen"
-                  className={inputClass}
-                />
-              </div>
-
-              {/* Warranty expiry */}
-              <div>
-                <label
-                  htmlFor="warranty_expiry"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Warranty Expiry
-                </label>
-
-                <input
-                  id="warranty_expiry"
-                  name="warranty_expiry"
-                  type="date"
-                  value={formData.warranty_expiry}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
-              </div>
-
-              {/* Notes */}
-              <div className="md:col-span-2 xl:col-span-3">
-                <label
-                  htmlFor="notes"
-                  className="mb-2 block text-sm font-medium text-slate-700"
-                >
-                  Notes
-                </label>
-
-                <textarea
-                  id="notes"
-                  name="notes"
-                  rows={4}
-                  value={formData.notes}
-                  onChange={handleChange}
-                  placeholder="Add any additional information..."
-                  className={`${inputClass} resize-none`}
-                />
-              </div>
-            </div>
-
-            {/* Buttons */}
-            <div className="mt-8 flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:justify-end">
+      <DashboardSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+
+      <div className="min-h-screen lg:ml-72">
+        {/* Header */}
+        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+          <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => navigate("/dashboard")}
-                className="rounded-xl px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open navigation"
+                className="rounded-lg border border-slate-200 p-2 text-slate-700 hover:bg-slate-100 lg:hidden"
               >
-                Cancel
+                <FiMenu size={20} />
               </button>
 
-              <motion.button
-                type="submit"
-                disabled={saving}
-                whileHover={!saving ? { y: -2 } : {}}
-                whileTap={!saving ? { scale: 0.98 } : {}}
-                className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              <Link
+                to="/dashboard"
+                className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600"
               >
-                <FiSave size={17} />
-
-                {saving ? "Saving..." : "Save Product"}
-              </motion.button>
+                <FiArrowLeft size={17} />
+                <span className="hidden sm:inline">Back to Dashboard</span>
+                <span className="sm:hidden">Back</span>
+              </Link>
             </div>
-          </form>
-        </motion.section>
-      </main>
+
+            <div className="text-lg font-bold tracking-tight text-slate-900">
+              AssetCare-AI
+            </div>
+          </div>
+        </header>
+
+        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <p className="text-sm font-semibold text-blue-600">
+              Asset management
+            </p>
+            <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+              Add a product
+            </h1>
+            <p className="mt-2 text-sm text-slate-500 sm:text-base">
+              Add your product manually, scan a barcode, or extract details
+              from an image.
+            </p>
+          </motion.div>
+
+          {/* Entry methods */}
+          <motion.section
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+          >
+            {[
+              {
+                id: "upload",
+                title: "Upload Bill",
+                description: "Upload an invoice or warranty image",
+                icon: FiFileText,
+              },
+              {
+                id: "scan",
+                title: "Scan Bill",
+                description: "Use the camera to capture a bill",
+                icon: FiCamera,
+              },
+              {
+                id: "manual",
+                title: "Manual Entry",
+                description: "Enter product details yourself",
+                icon: FiEdit3,
+              },
+              {
+                id: "qr",
+                title: "Scan QR Code",
+                description: "Read a product QR code",
+                icon: FiGrid,
+              },
+              {
+                id: "barcode",
+                title: "Scan Barcode",
+                description: "Read an EAN or UPC barcode",
+                icon: FiHash,
+              },
+              {
+                id: "photo",
+                title: "Product Photo",
+                description: "Upload a photo for AI extraction",
+                icon: FiImage,
+              },
+            ].map(({ id, title, description, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  setActiveMethod(id);
+                  setExtractionMessage("");
+                  setError("");
+                  setQrError("");
+                  setBarcodeError("");
+                }}
+                className={methodClass(id)}
+              >
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
+                  <Icon size={24} />
+                </div>
+                <div>
+                  <h2 className="font-bold text-slate-900">{title}</h2>
+                  <p className="mt-1 text-sm text-slate-500">{description}</p>
+                </div>
+              </button>
+            ))}
+          </motion.section>
+
+          {/* Bill scan */}
+          {activeMethod === "scan" && (
+            <section className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+              <h3 className="font-semibold text-blue-800">Scan Purchase Bill</h3>
+              <p className="mt-1 text-sm text-blue-700">
+                Take a clear photo of your bill to extract product details.
+              </p>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(event) => {
+                  setScannedBill(event.target.files?.[0] || null);
+                  setExtractionMessage("");
+                }}
+                className="mt-4 block w-full text-sm"
+              />
+              {scannedBill && (
+                <>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Selected: {scannedBill.name}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleWarrantyExtraction(scannedBill)}
+                    disabled={extracting}
+                    className="mt-3 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white disabled:opacity-50"
+                  >
+                    {extracting ? "Analyzing bill..." : "Extract Bill Details"}
+                  </button>
+                </>
+              )}
+              {extractionMessage && (
+                <p className="mt-3 text-sm text-slate-700">{extractionMessage}</p>
+              )}
+            </section>
+          )}
+
+          {/* QR scanner */}
+          {activeMethod === "qr" && (
+            <section className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+              <h3 className="font-semibold text-blue-800">Scan QR Code</h3>
+              <div id="qr-reader" className="mt-4 w-full max-w-md" />
+              {!scanningQR ? (
+                <button
+                  type="button"
+                  onClick={startQRScanner}
+                  className="mt-4 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white"
+                >
+                  Start QR Scanner
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={stopQRScanner}
+                  className="mt-4 rounded-xl border bg-white px-5 py-3 font-medium text-slate-700"
+                >
+                  Stop Camera
+                </button>
+              )}
+              {qrResult && (
+                <p className="mt-3 break-all text-sm text-green-700">
+                  Scanned: {qrResult}
+                </p>
+              )}
+              {qrError && (
+                <p className="mt-3 text-sm text-slate-700">{qrError}</p>
+              )}
+            </section>
+          )}
+
+          {/* Barcode scanner */}
+          {activeMethod === "barcode" && (
+            <section className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+              <h3 className="font-semibold text-blue-800">Scan Barcode</h3>
+              <p className="mt-1 text-sm text-blue-700">
+                Scan a barcode with your camera or upload a clear barcode image.
+              </p>
+              <div id="barcode-reader" className="mt-4 w-full max-w-md overflow-hidden rounded-xl" />
+
+              {scanningBarcode ? (
+                <button
+                  type="button"
+                  onClick={stopBarcodeScanner}
+                  className="mt-4 rounded-xl border bg-white px-5 py-3 font-medium text-slate-700"
+                >
+                  Stop Camera
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startBarcodeScanner}
+                  className="mt-4 rounded-xl bg-blue-600 px-5 py-3 font-medium text-white"
+                >
+                  Start Barcode Scanner
+                </button>
+              )}
+
+              <label className="mt-4 block text-sm font-medium text-slate-700">
+                Scan from photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  disabled={scanningBarcode || readingBarcodeImage || lookingUpBarcode}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    scanBarcodeImage(file);
+                  }}
+                  className="mt-2 block w-full text-sm"
+                />
+              </label>
+
+              {(readingBarcodeImage || lookingUpBarcode) && (
+                <p className="mt-3 text-sm text-blue-700">
+                  {readingBarcodeImage ? "Reading barcode..." : "Looking up product..."}
+                </p>
+              )}
+              {barcodeResult && (
+                <p className="mt-3 break-all text-sm text-green-700">
+                  Scanned {barcodeResult.format}: {barcodeResult.value}
+                </p>
+              )}
+              {(barcodeResult?.productName || barcodeResult?.brand) && (
+                <p className="mt-2 text-sm text-green-700">
+                  Catalog match: {barcodeResult.productName} {barcodeResult.brand}
+                </p>
+              )}
+              {barcodeError && (
+                <p className="mt-3 text-sm text-red-600">{barcodeError}</p>
+              )}
+            </section>
+          )}
+
+          {/* Main form */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/40 sm:p-8"
+          >
+            <div className="mb-7">
+              <h2 className="text-lg font-bold text-slate-900">
+                Product details
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Review extracted information or enter the details manually.
+              </p>
+            </div>
+
+            {error && (
+              <div role="alert" className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div role="status" className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-600">
+                {success}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-x-5 gap-y-5 md:grid-cols-2 xl:grid-cols-3">
+                <div className="md:col-span-2 xl:col-span-3">
+                  <label htmlFor="product_name" className="mb-2 block text-sm font-medium text-slate-700">
+                    Product Name *
+                  </label>
+                  <input id="product_name" name="product_name" required value={formData.product_name} onChange={handleChange} placeholder="Example: Samsung Washing Machine" className={inputClass} />
+                </div>
+
+                <div>
+                  <label htmlFor="brand" className="mb-2 block text-sm font-medium text-slate-700">Brand</label>
+                  <input id="brand" name="brand" value={formData.brand} onChange={handleChange} placeholder="Brand" className={inputClass} />
+                </div>
+
+                <div>
+                  <label htmlFor="category" className="mb-2 block text-sm font-medium text-slate-700">Category</label>
+                  <select id="category" name="category" value={formData.category} onChange={handleChange} className={inputClass}>
+                    <option value="">Select category</option>
+                    <option value="Home & household products">Home & household products</option>
+                    <option value="Personal electronics">Personal electronics</option>
+                    <option value="Vehicles">Vehicles</option>
+                    <option value="Appliances">Appliances</option>
+                    <option value="Business assets">Business assets</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="model" className="mb-2 block text-sm font-medium text-slate-700">Model</label>
+                  <input id="model" name="model" value={formData.model} onChange={handleChange} placeholder="Model" className={inputClass} />
+                </div>
+
+                <div>
+                  <label htmlFor="serial_number" className="mb-2 block text-sm font-medium text-slate-700">Serial Number</label>
+                  <input id="serial_number" name="serial_number" value={formData.serial_number} onChange={handleChange} placeholder="Serial Number" className={inputClass} />
+                </div>
+
+                {activeMethod === "photo" && (
+                  <div className="md:col-span-2 xl:col-span-3">
+                    <label className="mb-2 block text-sm font-medium text-slate-700">Product Photo</label>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={(event) => setProductPhoto(event.target.files?.[0] || null)}
+                      className={inputClass}
+                    />
+
+                    {productPhoto && (
+                      <div className="mt-4">
+                        <img
+                          src={URL.createObjectURL(productPhoto)}
+                          alt="Product preview"
+                          className="h-48 w-48 rounded-xl border border-slate-200 object-cover"
+                        />
+                        <button type="button" onClick={() => setProductPhoto(null)} className="mt-2 text-sm text-red-600">
+                          Remove photo
+                        </button>
+                      </div>
+                    )}
+
+                    <button type="button" onClick={() => handleWarrantyExtraction(productPhoto)} disabled={extracting || !productPhoto} className="mt-4 rounded-xl bg-indigo-600 px-5 py-3 font-medium text-white disabled:opacity-50">
+                      {extracting ? "Analyzing photo..." : "Extract Details with AI"}
+                    </button>
+                    {extractionMessage && <p className="mt-3 text-sm text-slate-600">{extractionMessage}</p>}
+                  </div>
+                )}
+
+                {activeMethod === "upload" && (
+                  <div className="md:col-span-2 xl:col-span-3">
+                    <label className="mb-2 block text-sm font-medium text-slate-700">Invoice / Warranty Document</label>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,.pdf"
+                      onChange={(event) => setInvoiceDocument(event.target.files?.[0] || null)}
+                      className={inputClass}
+                    />
+                    <p className="mt-1 text-xs text-slate-500">
+                      AI extraction currently supports JPG, PNG and WebP images, not PDF files.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleWarrantyExtraction(invoiceDocument)}
+                      disabled={extracting || !invoiceDocument || !["image/jpeg", "image/png", "image/webp"].includes(invoiceDocument.type)}
+                      className="mt-3 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-medium text-white disabled:opacity-50"
+                    >
+                      {extracting ? "Analyzing document..." : "Extract Details with AI"}
+                    </button>
+                    {extractionMessage && <p className="mt-3 text-sm text-slate-600">{extractionMessage}</p>}
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="invoice_number" className="mb-2 block text-sm font-medium text-slate-700">Invoice Number</label>
+                  <input id="invoice_number" name="invoice_number" value={formData.invoice_number} onChange={handleChange} placeholder="Invoice Number" className={inputClass} />
+                </div>
+
+                <div>
+                  <label htmlFor="purchase_date" className="mb-2 block text-sm font-medium text-slate-700">Purchase Date</label>
+                  <input id="purchase_date" name="purchase_date" type="date" value={formData.purchase_date} onChange={handlePurchaseDateChange} className={inputClass} />
+                </div>
+
+                <div>
+                  <label htmlFor="warranty_months" className="mb-2 block text-sm font-medium text-slate-700">Warranty (months)</label>
+                  <input id="warranty_months" name="warranty_months" type="number" min="0" value={formData.warranty_months} onChange={handleWarrantyChange} placeholder="Warranty months" className={inputClass} />
+                  {formData.warranty_expiry && (
+                    <p className="mt-2 text-xs text-slate-500">
+                      Warranty expires on {new Date(`${formData.warranty_expiry}T12:00:00`).toLocaleDateString("en-IN")}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="store_name" className="mb-2 block text-sm font-medium text-slate-700">Store</label>
+                  <input id="store_name" name="store_name" value={formData.store_name} onChange={handleChange} placeholder="Store name" className={inputClass} />
+                </div>
+
+                <div>
+                  <label htmlFor="purchase_price" className="mb-2 block text-sm font-medium text-slate-700">Price</label>
+                  <input id="purchase_price" name="purchase_price" type="number" min="0" step="0.01" value={formData.purchase_price} onChange={handleChange} placeholder="Price" className={inputClass} />
+                </div>
+
+                <div>
+                  <label htmlFor="location_in_home" className="mb-2 block text-sm font-medium text-slate-700">Location in Home</label>
+                  <input id="location_in_home" name="location_in_home" value={formData.location_in_home} onChange={handleChange} placeholder="Example: Kitchen" className={inputClass} />
+                </div>
+
+                <div>
+                  <label htmlFor="warranty_expiry" className="mb-2 block text-sm font-medium text-slate-700">Warranty Expiry</label>
+                  <input id="warranty_expiry" name="warranty_expiry" type="date" value={formData.warranty_expiry} onChange={handleChange} className={inputClass} />
+                </div>
+
+                <div className="md:col-span-2 xl:col-span-3">
+                  <label htmlFor="notes" className="mb-2 block text-sm font-medium text-slate-700">Notes</label>
+                  <textarea id="notes" name="notes" rows={4} value={formData.notes} onChange={handleChange} placeholder="Add any additional information..." className={`${inputClass} resize-none`} />
+                </div>
+              </div>
+
+              <div className="mt-8 flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:justify-end">
+                <button type="button" onClick={() => navigate("/dashboard")} className="rounded-xl px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                  Cancel
+                </button>
+                <motion.button
+                  type="submit"
+                  disabled={saving}
+                  whileHover={!saving ? { y: -2 } : {}}
+                  whileTap={!saving ? { scale: 0.98 } : {}}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <FiSave size={17} />
+                  {saving ? "Saving..." : "Save Product"}
+                </motion.button>
+              </div>
+            </form>
+          </motion.section>
+        </main>
+      </div>
     </div>
   );
 }
