@@ -380,7 +380,7 @@ function SmartShopping() {
         onClose={() => setSidebarOpen(false)}
       />
 
-      <main className="min-h-screen lg:ml-72">
+      <main className="min-h-screen lg:ml-60">
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-slate-200 bg-white px-4 sm:px-6">
           <button
             type="button"

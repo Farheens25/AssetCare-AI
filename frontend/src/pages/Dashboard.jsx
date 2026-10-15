@@ -206,7 +206,7 @@ function Dashboard() {
       {/* Main area */}
 
       {/* Main area */}
-      <div className="lg:pl-72">
+      <div className="lg:pl-60">
         {/* Header */}
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6">

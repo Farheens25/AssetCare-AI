@@ -98,7 +98,7 @@ const formatPrice = (amount) => {
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="lg:pl-72">
+      <div className="lg:pl-60">
         <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6">
             <button

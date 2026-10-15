@@ -220,7 +220,7 @@ return (
       onClose={() => setSidebarOpen(false)}
     />
 
-    <div className="lg:pl-72">
+    <div className="lg:pl-60">
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 sm:px-6">
         <div className="flex items-center gap-3">
           <button
