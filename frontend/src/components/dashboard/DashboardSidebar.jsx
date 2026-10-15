@@ -46,7 +46,7 @@ function DashboardSidebar({ open, onClose }) {
       items: [
         { label: "Service History", icon: FiTool, path: "/service-history" },
         { label: "Book Service", icon: FiCalendar, path: "/book-service" },
-        { label: "Smart Reminders", icon: FiCalendar, path: "#" },
+        { label: "Smart Reminders", icon: FiCalendar, path: "/smart-reminders" },
         { label: "Calendar", icon: FiCalendar, path: "/calendar" },
       ],
     },
