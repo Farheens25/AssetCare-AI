@@ -1,16 +1,18 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  FiGrid,
+  FiHome,
   FiPackage,
   FiPlusCircle,
-  FiSearch,
-  FiMessageCircle,
-  FiHeart,
+  FiCpu,
+  FiActivity,
+  FiTrendingUp,
   FiTool,
   FiCalendar,
-  FiHome,
+  FiBell,
+  FiGrid,
   FiFileText,
   FiShield,
+  FiAlertTriangle,
   FiBarChart2,
   FiShoppingBag,
   FiUsers,
@@ -20,152 +22,167 @@ import {
   FiX,
 } from "react-icons/fi";
 
-function DashboardSidebar({ open, onClose }) {
-  const location = useLocation();
+const sections = [
+  {
+    title: "Overview",
+    items: [
+      { label: "Dashboard", path: "/dashboard", icon: FiHome },
+      { label: "My Products", path: "/products", icon: FiPackage },
+      { label: "Add Product", path: "/add-asset", icon: FiPlusCircle },
+      
+    ],
+  },
+  {
+    title: "Intelligence",
+    items: [
+      { label: "AI Assistant", path: "/ai-assistant", icon: FiCpu },
+      { label: "Product Health", path: "/health", icon: FiActivity },
+      { label: "Predictive Care", path: "/predictive-care", icon: FiTrendingUp },
+      { label: "Repair vs Replace", path: "/repair-vs-replace", icon: FiTool },
+    ],
+  },
+  {
+    title: "Care",
+    items: [
+      { label: "Service History", path: "/service-history", icon: FiTool },
+      { label: "Book Service", path: "/book-service", icon: FiCalendar },
+      { label: "Smart Reminders", path: "/reminders", icon: FiBell },
+      { label: "Calendar", path: "/calendar", icon: FiCalendar },
+    ],
+  },
+  {
+    title: "Assets",
+    items: [
+      { label: "Home Assets", path: "/home-assets", icon: FiGrid },
+      { label: "Document Vault", path: "/document-vault", icon: FiFileText },
+      { label: "Insurance", path: "/insurance", icon: FiShield },
+      { label: "Recalls", path: "/recalls", icon: FiAlertTriangle },
+    ],
+  },
+  {
+    title: "Value",
+    items: [
+      { label: "Analytics", path: "/analytics", icon: FiBarChart2 },
+      { label: "Resale Center", path: "/resale", icon: FiTrendingUp },
+      { label: "Smart Shopping", path: "/shopping", icon: FiShoppingBag },
+      { label: "Energy & Eco", path: "/energy-eco", icon: FiBarChart2 },
+    ],
+  },
+  {
+    title: "Workspace",
+    items: [
+      { label: "Family Mode", path: "/family", icon: FiUsers },
+      { label: "Business", path: "/business", icon: FiBriefcase },
+      { label: "Support", path: "/support", icon: FiHelpCircle },
+      { label: "Admin Panel", path: "/admin", icon: FiShield },
+      { label: "Notifications", path: "/notifications", icon: FiBell },
+      { label: "Profile", path: "/profile", icon: FiUsers },
+      { label: "Settings", path: "/settings", icon: FiSettings },
+    ],
+  },
+];
 
-  const sections = [
-    {
-      title: "Overview",
-      items: [
-        { label: "Dashboard", icon: FiGrid, path: "/dashboard" },
-        { label: "My Assets", icon: FiPackage, path: "/products" },
-        { label: "Add Asset", icon: FiPlusCircle, path: "/add-asset" },
-      ],
-    },
-    {
-      title: "Intelligence",
-      items: [
-        { label: "AI Assistant", icon: FiMessageCircle, path: "/ai-assistant" },
-        { label: "Product Health", icon: FiHeart, path: "/health" },
-        { label: "Predictive Care", icon: FiTool, path: "#" },
-        { label: "Repair vs Replace", icon: FiBarChart2, path: "#" },
-      ],
-    },
-    {
-      title: "Care",
-      items: [
-        { label: "Service History", icon: FiTool, path: "/service-history" },
-        { label: "Book Service", icon: FiCalendar, path: "/book-service" },
-        { label: "Smart Reminders", icon: FiCalendar, path: "/smart-reminders" },
-        { label: "Calendar", icon: FiCalendar, path: "/calendar" },
-      ],
-    },
-    {
-      title: "Assets",
-      items: [
-        { label: "Home Assets", icon: FiHome, path: "/home-assets" },
-        { label: "Document Vault", icon: FiFileText, path: "/document-vault" },
-        { label: "Insurance", icon: FiShield, path: "#" },
-        { label: "Recalls", icon: FiSearch, path: "#" },
-      ],
-    },
-    {
-      title: "Value",
-      items: [
-        { label: "Analytics", icon: FiBarChart2, path: "#" },
-        { label: "Resale Center", icon: FiShoppingBag, path: "#" },
-        { label: "Smart Shopping", icon: FiShoppingBag, path: "/shopping" },
-        { label: "Energy & Eco", icon: FiBarChart2, path: "/energy-eco" },
-      ],
-    },
-    {
-      title: "Workspace",
-      items: [
-        { label: "Family Mode", icon: FiUsers, path: "/family" },
-        { label: "Business", icon: FiBriefcase, path: "#" },
-        { label: "Support", icon: FiHelpCircle, path: "#" },
-        { label: "Settings", icon: FiSettings, path: "/settings" },
-      ],
-    },
-  ];
+export default function DashboardSidebar({
+  open = true,
+  onClose = () => {},
+}) {
+  const location = useLocation();
 
   return (
     <>
       {open && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-900/40 lg:hidden"
+        <button
+          type="button"
+          aria-label="Close navigation overlay"
           onClick={onClose}
+          className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden"
         />
       )}
 
       <aside
-        className={`
-          fixed left-0 top-0 z-50 flex h-screen w-72
-          flex-col border-r border-slate-200 bg-white
-          transition-transform duration-300
-          lg:translate-x-0
-          ${open ? "translate-x-0" : "-translate-x-full"}
-        `}
+        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-72 flex-col border-r border-slate-200 bg-white transition-transform duration-300 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        } lg:translate-x-0`}
       >
-        <div className="flex h-20 items-center justify-between border-b border-slate-100 px-6">
-          <Link
-            to="/dashboard"
-            onClick={onClose}
-            className="text-xl font-bold tracking-tight text-slate-900"
-          >
-            AssetCare-AI
-          </Link>
+        <div className="shrink-0 border-b border-slate-100 px-5 py-5">
+          <div className="flex items-center justify-between gap-2">
+            <Link
+              to="/dashboard"
+              onClick={onClose}
+              className="flex items-center gap-3"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-500 text-xl font-bold text-white">
+                <FiShield />
+              </div>
+              <div>
+                <h2 className="text-lg font-extrabold tracking-tight text-slate-900">
+                  AssetCare<span className="text-sky-500">AI</span>
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Smart Asset Management
+                </p>
+              </div>
+            </Link>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
-            aria-label="Close menu"
-          >
-            <FiX size={20} />
-          </button>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close sidebar"
+              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+            >
+              <FiX size={20} />
+            </button>
+          </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-4 py-5">
+        <nav className="min-h-0 flex-1 space-y-5 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-5">
           {sections.map((section) => (
-            <div key={section.title} className="mb-6">
-              <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <section key={section.title}>
+              <h3 className="mb-2 px-3 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
                 {section.title}
-              </p>
+              </h3>
 
               <div className="space-y-1">
-                {section.items.map((item) => {
-                  const Icon = item.icon;
+                {section.items.map(({ label, path, icon: Icon }) => {
                   const active =
-                    item.path !== "#" && location.pathname === item.path;
-
-                  if (item.path === "#") {
-                    return (
-                      <button
-                        key={item.label}
-                        type="button"
-                        disabled
-                        className="flex w-full cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-400"
-                      >
-                        <Icon size={17} />
-                        <span>{item.label}</span>
-                      </button>
-                    );
-                  }
+                    location.pathname === path ||
+                    location.pathname.startsWith(`${path}/`);
 
                   return (
                     <Link
-                      key={item.label}
-                      to={item.path}
+                      key={path}
+                      to={path}
                       onClick={onClose}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${
                         active
-                          ? "bg-blue-50 text-blue-600"
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                          ? "bg-sky-50 font-semibold text-sky-700"
+                          : "font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-950"
                       }`}
                     >
-                      <Icon size={17} />
-                      <span>{item.label}</span>
+                      <Icon size={18} className="shrink-0" />
+                      <span>{label}</span>
+                      {active && (
+                        <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500" />
+                      )}
                     </Link>
                   );
                 })}
               </div>
-            </div>
+            </section>
           ))}
         </nav>
+
+        <div className="shrink-0 border-t border-slate-100 p-4">
+          <div className="rounded-xl bg-slate-50 p-3">
+            <p className="text-sm font-semibold text-slate-800">
+              Your assets, organized
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Manage products, warranties and services in one place.
+            </p>
+          </div>
+        </div>
       </aside>
     </>
   );
 }
-
-export default DashboardSidebar;
