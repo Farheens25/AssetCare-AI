@@ -1,3 +1,4 @@
+
 import { Routes, Route } from "react-router-dom";
 
 import Landing from "../pages/Landing";
@@ -22,6 +23,7 @@ import AIAssistant from "../pages/AIAssistant";
 import SmartReminders from "../pages/SmartReminders";
 import SmartShopping from "../pages/SmartShopping";
 import EnergyEco from "../pages/EnergyEco";
+import ResaleCenter from "../pages/ResaleCenter";
 import NotFound from "../pages/NotFound";
 
 // Temporary pages for features that do not have page files yet.
@@ -33,14 +35,19 @@ function FeaturePlaceholder({ title, description }) {
           AssetCare AI / Workspace
         </p>
 
-        <h1 className="mt-3 text-3xl font-bold text-slate-900">{title}</h1>
+        <h1 className="mt-3 text-3xl font-bold text-slate-900">
+          {title}
+        </h1>
 
         <p className="mt-3 max-w-2xl leading-7 text-slate-600">
           {description}
         </p>
 
         <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Coming soon</h2>
+          <h2 className="text-lg font-semibold text-slate-900">
+            Coming soon
+          </h2>
+
           <p className="mt-2 text-sm leading-6 text-slate-500">
             This page is connected to navigation. Its complete functionality
             can be implemented next.
@@ -67,10 +74,10 @@ function AppRoutes() {
       <Route path="/add-asset" element={<AddAsset />} />
       <Route path="/onboarding" element={<Onboarding />} />
 
-   
-     
+      {/* AI and asset health */}
       <Route path="/ai-assistant" element={<AIAssistant />} />
       <Route path="/health" element={<ProductHealth />} />
+
       <Route
         path="/predictive-care"
         element={
@@ -80,6 +87,7 @@ function AppRoutes() {
           />
         }
       />
+
       <Route
         path="/repair-vs-replace"
         element={
@@ -99,6 +107,7 @@ function AppRoutes() {
 
       {/* Documents and protection */}
       <Route path="/document-vault" element={<DocumentVault />} />
+
       <Route
         path="/insurance"
         element={
@@ -108,6 +117,7 @@ function AppRoutes() {
           />
         }
       />
+
       <Route
         path="/recalls"
         element={
@@ -121,6 +131,7 @@ function AppRoutes() {
       {/* Value and shopping */}
       <Route path="/shopping" element={<SmartShopping />} />
       <Route path="/energy-eco" element={<EnergyEco />} />
+
       <Route
         path="/analytics"
         element={
@@ -130,18 +141,13 @@ function AppRoutes() {
           />
         }
       />
-      <Route
-        path="/resale"
-        element={
-          <FeaturePlaceholder
-            title="Resale Center"
-            description="Explore resale planning and estimated asset value."
-          />
-        }
-      />
+
+      {/* Resale Center */}
+      <Route path="/resale" element={<ResaleCenter />} />
 
       {/* Workspace */}
       <Route path="/family" element={<FamilyMode />} />
+
       <Route
         path="/business"
         element={
@@ -151,6 +157,7 @@ function AppRoutes() {
           />
         }
       />
+
       <Route
         path="/support"
         element={
@@ -160,6 +167,7 @@ function AppRoutes() {
           />
         }
       />
+
       <Route
         path="/admin"
         element={
@@ -169,6 +177,7 @@ function AppRoutes() {
           />
         }
       />
+
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/settings" element={<Settings />} />

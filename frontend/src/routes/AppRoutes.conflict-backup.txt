@@ -1,0 +1,194 @@
+
+<<<<<<< Updated upstream
+import Products from "../pages/Products";
+import EnergyEco from "../pages/EnergyEco";
+=======
+>>>>>>> Stashed changes
+import { Routes, Route } from "react-router-dom";
+
+import Landing from "../pages/Landing";
+import Login from "../pages/Login";
+import Signup from "../pages/Signup";
+import Dashboard from "../pages/Dashboard";
+import HomeAsset from "../pages/HomeAsset";
+import Products from "../pages/Products";
+import AddAsset from "../pages/AddAsset";
+import Onboarding from "../pages/Onboarding";
+import ServiceHistory from "../pages/ServiceHistory";
+import BookService from "../pages/BookService";
+import Notifications from "../pages/Notifications";
+import Profile from "../pages/Profile";
+import Settings from "../pages/Settings";
+import ProductHealth from "../pages/ProductHealth";
+import MaintenanceCalendar from "../pages/MaintenanceCalendar";
+import DocumentVault from "../pages/DocumentVault";
+import FamilyMode from "../pages/FamilyMode";
+import AssetDetails from "../pages/AssetDetails";
+import AIAssistant from "../pages/AIAssistant";
+<<<<<<< Updated upstream
+import SmartReminders from "../pages/SmartReminders";
+=======
+import SmartShopping from "../pages/SmartShopping";
+import NotFound from "../pages/NotFound";
+
+// Temporary pages for features that do not have page files yet.
+function FeaturePlaceholder({ title, description }) {
+  return (
+    <main className="min-h-screen bg-slate-50 px-6 py-10 lg:ml-72">
+      <div className="mx-auto max-w-5xl">
+        <p className="text-sm font-semibold text-sky-600">
+          AssetCare AI / Workspace
+        </p>
+
+        <h1 className="mt-3 text-3xl font-bold text-slate-900">
+          {title}
+        </h1>
+
+        <p className="mt-3 max-w-2xl leading-7 text-slate-600">
+          {description}
+        </p>
+
+        <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-slate-900">
+            Coming soon
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            This page is connected to navigation. Its complete functionality
+            can be implemented next.
+          </p>
+        </div>
+      </div>
+    </main>
+  );
+}
+>>>>>>> Stashed changes
+
+function AppRoutes() {
+  return (
+    <Routes>
+      {/* Public pages */}
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+
+      {/* Dashboard and products */}
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/home-assets" element={<HomeAsset />} />
+      <Route path="/products" element={<Products />} />
+<<<<<<< Updated upstream
+=======
+      <Route path="/products/:id" element={<AssetDetails />} />
+>>>>>>> Stashed changes
+      <Route path="/add-asset" element={<AddAsset />} />
+      <Route path="/onboarding" element={<Onboarding />} />
+
+      {/* Intelligence */}
+      <Route path="/ai-search" element={
+        <FeaturePlaceholder
+          title="AI Search"
+          description="Search your assets, warranties and product information."
+        />
+      } />
+      <Route path="/ai-assistant" element={<AIAssistant />} />
+      <Route path="/health" element={<ProductHealth />} />
+      <Route path="/predictive-care" element={
+        <FeaturePlaceholder
+          title="Predictive Care"
+          description="Explore maintenance predictions and upcoming care needs for your assets."
+        />
+      } />
+      <Route path="/repair-vs-replace" element={
+        <FeaturePlaceholder
+          title="Repair vs Replace"
+          description="Compare repair costs with replacement options before making a decision."
+        />
+      } />
+
+<<<<<<< Updated upstream
+      {/* Service Management */}
+      <Route path="/service-history" element={<ServiceHistory />} />
+      <Route path="/book-service" element={<BookService />} />
+=======
+      {/* Service management */}
+      <Route path="/service-history" element={<ServiceHistory />} />
+      <Route path="/book-service" element={<BookService />} />
+      <Route path="/reminders" element={
+        <FeaturePlaceholder
+          title="Smart Reminders"
+          description="Keep track of warranty expiries, servicing dates and maintenance reminders."
+        />
+      } />
+      <Route path="/calendar" element={<MaintenanceCalendar />} />
+>>>>>>> Stashed changes
+
+      {/* Documents and protection */}
+      <Route path="/document-vault" element={<DocumentVault />} />
+      <Route path="/insurance" element={
+        <FeaturePlaceholder
+          title="Insurance"
+          description="Organize insurance information for your registered assets."
+        />
+      } />
+      <Route path="/recalls" element={
+        <FeaturePlaceholder
+          title="Product Recalls"
+          description="Keep track of product recall information and safety notices."
+        />
+      } />
+
+      {/* Value and shopping */}
+      <Route path="/shopping" element={<SmartShopping />} />
+      <Route path="/analytics" element={
+        <FeaturePlaceholder
+          title="Analytics"
+          description="Review asset summaries and maintenance trends."
+        />
+      } />
+      <Route path="/resale" element={
+        <FeaturePlaceholder
+          title="Resale Center"
+          description="Explore resale planning and estimated asset value."
+        />
+      } />
+
+      {/* Workspace */}
+      <Route path="/family" element={<FamilyMode />} />
+      <Route path="/business" element={
+        <FeaturePlaceholder
+          title="Business"
+          description="Manage business assets and related maintenance information."
+        />
+      } />
+      <Route path="/support" element={
+        <FeaturePlaceholder
+          title="Support"
+          description="Find help with your AssetCare AI account and features."
+        />
+      } />
+      <Route path="/admin" element={
+        <FeaturePlaceholder
+          title="Admin Panel"
+          description="Administrative tools can be implemented here."
+        />
+      } />
+      <Route path="/notifications" element={<Notifications />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/settings" element={<Settings />} />
+<<<<<<< Updated upstream
+      <Route path="/energy-eco" element={<EnergyEco />} />
+      <Route path="/calendar" element={<MaintenanceCalendar />} />
+      <Route path="/family" element={<FamilyMode />} />
+      <Route path="/smart-reminders" element={<SmartReminders />} />
+      <Route path="/products/:id" element={<AssetDetails />} />
+
+      {/* 404 Page */}
+=======
+
+      {/* Keep this route last */}
+>>>>>>> Stashed changes
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
+
+export default AppRoutes;
